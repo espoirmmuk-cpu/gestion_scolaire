@@ -2,25 +2,26 @@
 
 set -e
 
-echo "Démarrage de Laravel..."
+echo "Demarrage de Laravel..."
 
-# Créer le certificat SSL Aiven à partir de la variable Render
+# Certificat SSL Aiven
 if [ -n "$AIVEN_CA_CERT" ]; then
-    echo "$AIVEN_CA_CERT" > /etc/ssl/certs/aiven-ca.pem
+    printf '%s\n' "$AIVEN_CA_CERT" > /etc/ssl/certs/aiven-ca.pem
     chmod 644 /etc/ssl/certs/aiven-ca.pem
-    echo "Certificat SSL Aiven installé."
+    echo "Certificat SSL Aiven installe."
 else
-    echo "ATTENTION : AIVEN_CA_CERT n'est pas défini."
+    echo "ATTENTION : AIVEN_CA_CERT n'est pas defini."
 fi
 
+# Nettoyage des caches
 php artisan config:clear
-php artisan cache:clear
 php artisan view:clear
 
-php artisan storage:link || true
-
-echo "Démarrage de PHP-FPM..."
+echo "Demarrage de PHP-FPM..."
 php-fpm -D
 
-echo "Démarrage de Nginx..."
+echo "Verification de PHP-FPM..."
+sleep 2
+
+echo "Demarrage de Nginx..."
 nginx -g "daemon off;"
