@@ -15,6 +15,15 @@ return Application::configure(
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
+        // Faire confiance au proxy de Render pour HTTPS
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO
+        );
+
         $middleware->alias([
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'etablissement' => \App\Http\Middleware\EtablissementMiddleware::class,
