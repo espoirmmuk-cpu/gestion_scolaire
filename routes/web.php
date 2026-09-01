@@ -29,6 +29,7 @@ use App\Http\Controllers\RapportController;
 use App\Http\Controllers\AnneeScolaireController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AffectationEnseignantController;
+use App\Http\Controllers\ProfileController;
 
 use App\Models\Eleve;
 use App\Models\Classe;
@@ -54,6 +55,16 @@ use App\Models\AffectationEnseignant;
 | Accueil
 |--------------------------------------------------------------------------
 */
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+});
 
 Route::get('/', function () {
     return view('welcome');
@@ -87,79 +98,70 @@ Route::resource('inscriptions', InscriptionController::class)
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| TABLEAU DE BORD GESCO
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/dashboard', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | UTILISATEUR CONNECTÉ
-    |--------------------------------------------------------------------------
-    */
-
-    $utilisateur = auth()->user();
-
-    /*
-    |--------------------------------------------------------------------------
-    | STATISTIQUES
-    |--------------------------------------------------------------------------
-    */
-
-    /*
-    |--------------------------------------------------------------------------
-    | SUPER ADMINISTRATEUR
+    | ÉTABLISSEMENT DE L'UTILISATEUR CONNECTÉ
     |--------------------------------------------------------------------------
     |
-    | Un utilisateur dont id_etablissement = NULL est considéré comme
-    | administrateur général de la plateforme.
+    | NULL = administrateur global
     |
     */
 
-    if ($utilisateur->id_etablissement === null) {
+    $idEtablissement = auth()->user()->id_etablissement;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Statistiques réservées à l'administration générale
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | ANNÉE SCOLAIRE ACTIVE
+    |--------------------------------------------------------------------------
+    */
 
-        $nombreEtablissements = Etablissement::count();
+    $anneeQuery = DB::table('annees_scolaires')
+        ->where('est_active', 1);
 
-        $nombreUtilisateurs = User::count();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | On ne calcule pas les statistiques scolaires pour le Super Admin
-        |--------------------------------------------------------------------------
-        */
-
-        $nombreEleves = 0;
-
-        $nombreClasses = 0;
-
-        $nombreEnseignants = 0;
-
-        $nombrePaiements = 0;
-
-        $nombreInscriptions = 0;
-
-        $nombreFrequentations = 0;
+    if ($idEtablissement !== null) {
+        $anneeQuery->where(
+            'id_etablissement',
+            $idEtablissement
+        );
     }
 
+    $anneeScolaire = $anneeQuery
+        ->orderByDesc('date_debut')
+        ->first();
 
     /*
     |--------------------------------------------------------------------------
-    | UTILISATEUR D'UN ÉTABLISSEMENT
+    | VALEURS PAR DÉFAUT
     |--------------------------------------------------------------------------
-    |
-    | Toutes les statistiques scolaires sont filtrées avec
-    | id_etablissement de l'utilisateur connecté.
-    |
     */
 
-    else {
+    $nombreEleves = 0;
+    $nombreClasses = 0;
+    $nombreEnseignants = 0;
 
-        $idEtablissement = $utilisateur->id_etablissement;
+    $tauxFrequentation = 0;
+    $tauxPaiement = 0;
 
+    $evolutionLabels = [];
+    $evolutionEffectifs = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | SI UNE ANNÉE SCOLAIRE EST DISPONIBLE
+    |--------------------------------------------------------------------------
+    */
+
+    if ($anneeScolaire) {
+
+        $idAnnee = $anneeScolaire->id_annee_scolaire;
 
         /*
         |--------------------------------------------------------------------------
@@ -167,10 +169,13 @@ Route::get('/dashboard', function () {
         |--------------------------------------------------------------------------
         */
 
-        $nombreEleves = Eleve::where(
-            'id_etablissement',
-            $idEtablissement
-        )->count();
+        $nombreEleves = DB::table('inscriptions')
+            ->where(
+                'id_annee_scolaire',
+                $idAnnee
+            )
+            ->distinct()
+            ->count('id_eleve');
 
 
         /*
@@ -179,136 +184,224 @@ Route::get('/dashboard', function () {
         |--------------------------------------------------------------------------
         */
 
-        $nombreClasses = Classe::where(
-            'id_etablissement',
-            $idEtablissement
-        )->count();
+        $classesQuery = DB::table('classes')
+            ->where(
+                'id_annee_scolaire',
+                $idAnnee
+            );
+
+        if ($idEtablissement !== null) {
+            $classesQuery->where(
+                'id_etablissement',
+                $idEtablissement
+            );
+        }
+
+        $nombreClasses = $classesQuery->count();
 
 
         /*
         |--------------------------------------------------------------------------
-        | 3. NOMBRE D'ENSEIGNANTS
+        | 3. NOMBRE D'ENSEIGNANTS ACTIFS
         |--------------------------------------------------------------------------
         */
 
-        $nombreEnseignants = Personnel::where(
-            'id_etablissement',
-            $idEtablissement
-        )
-        ->whereIn('fonction', [
-            'ENSEIGNANT',
-            'Enseignant',
-            'enseignant'
-        ])
-        ->whereIn('statut', [
-            'ACTIF',
-            'ACTIVE',
-            'Actif',
-            'Active'
-        ])
-        ->count();
+        $enseignantsQuery = DB::table('personnel')
+            ->whereIn('fonction', [
+                'ENSEIGNANT',
+                'Enseignant',
+                'enseignant'
+            ])
+            ->whereIn('statut', [
+                'ACTIF',
+                'ACTIVE',
+                'Actif',
+                'Active'
+            ]);
+
+        if ($idEtablissement !== null) {
+            $enseignantsQuery->where(
+                'id_etablissement',
+                $idEtablissement
+            );
+        }
+
+        $nombreEnseignants =
+            $enseignantsQuery->count();
 
 
         /*
         |--------------------------------------------------------------------------
-        | 4. NOMBRE DE PAIEMENTS
+        | 4. TAUX DE FRÉQUENTATION
+        |--------------------------------------------------------------------------
+        */
+
+        $frequentationQuery = DB::table('presences')
+            ->join(
+                'inscriptions',
+                'inscriptions.id_eleve',
+                '=',
+                'presences.id_eleve'
+            )
+            ->where(
+                'inscriptions.id_annee_scolaire',
+                $idAnnee
+            );
+
+        $frequentation = $frequentationQuery
+            ->select(
+                'presences.statut',
+                DB::raw('COUNT(*) AS total')
+            )
+            ->groupBy('presences.statut')
+            ->get();
+
+        $nombrePresences = $frequentation
+            ->filter(function ($ligne) {
+                return strtoupper(trim($ligne->statut)) === 'PRESENT';
+            })
+            ->sum('total');
+
+        $nombreAbsences = $frequentation
+            ->filter(function ($ligne) {
+                return strtoupper(trim($ligne->statut)) === 'ABSENT';
+            })
+            ->sum('total');
+
+        $totalFrequentation =
+            $nombrePresences + $nombreAbsences;
+
+        $tauxFrequentation =
+            $totalFrequentation > 0
+                ? round(
+                    ($nombrePresences / $totalFrequentation) * 100,
+                    1
+                )
+                : 0;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. TAUX DE PAIEMENT
         |--------------------------------------------------------------------------
         |
-        | Les paiements sont liés aux élèves par id_eleve.
-        | On ne compte donc que les paiements des élèves de cette école.
+        | Nombre d'élèves ayant effectué au moins un paiement
+        | par rapport au nombre total d'élèves inscrits.
         |
         */
 
-        $nombrePaiements = Paiement::whereHas(
-            'eleve',
-            function ($query) use ($idEtablissement) {
+        $elevesAyantPaye = DB::table('paiements')
+            ->join(
+                'inscriptions',
+                'inscriptions.id_eleve',
+                '=',
+                'paiements.id_eleve'
+            )
+            ->where(
+                'inscriptions.id_annee_scolaire',
+                $idAnnee
+            )
+            ->distinct()
+            ->count('paiements.id_eleve');
 
-                $query->where(
-                    'id_etablissement',
-                    $idEtablissement
-                );
+        $tauxPaiement =
+            $nombreEleves > 0
+                ? round(
+                    ($elevesAyantPaye / $nombreEleves) * 100,
+                    1
+                )
+                : 0;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. ÉVOLUTION DES EFFECTIFS
+        |--------------------------------------------------------------------------
+        |
+        | Nous construisons une courbe mensuelle cumulative
+        | à partir des dates d'inscription.
+        |
+        */
+
+        $dateDebut = \Carbon\Carbon::parse(
+            $anneeScolaire->date_debut
+        );
+
+        $dateFin = \Carbon\Carbon::parse(
+            $anneeScolaire->date_fin
+        );
+
+        $dateCourante = $dateDebut->copy()->startOfMonth();
+
+        while ($dateCourante <= $dateFin) {
+
+            $finDuMois = $dateCourante
+                ->copy()
+                ->endOfMonth();
+
+            /*
+            | Ne pas dépasser la fin de l'année scolaire
+            */
+
+            if ($finDuMois > $dateFin) {
+                $finDuMois = $dateFin->copy();
             }
-        )->count();
 
+            $effectif = DB::table('inscriptions')
+                ->where(
+                    'id_annee_scolaire',
+                    $idAnnee
+                )
+                ->whereDate(
+                    'date_inscription',
+                    '<=',
+                    $finDuMois->toDateString()
+                )
+                ->distinct()
+                ->count('id_eleve');
 
-        /*
-        |--------------------------------------------------------------------------
-        | 5. NOMBRE D'INSCRIPTIONS
-        |--------------------------------------------------------------------------
-        |
-        | Les inscriptions sont liées aux élèves.
-        | On ne compte que les inscriptions des élèves de cette école.
-        |
-        */
+            $evolutionLabels[] =
+                $dateCourante->locale('fr')->translatedFormat('M');
 
-        $nombreInscriptions = Inscription::whereHas(
-            'eleve',
-            function ($query) use ($idEtablissement) {
+            $evolutionEffectifs[] =
+                $effectif;
 
-                $query->where(
-                    'id_etablissement',
-                    $idEtablissement
-                );
-            }
-        )->count();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | 6. FRÉQUENTATIONS
-        |--------------------------------------------------------------------------
-        |
-        | La fréquentation correspond ici au nombre d'enregistrements
-        | présents dans la table presences pour les élèves de l'école.
-        |
-        */
-
-        $nombreFrequentations = Presence::whereHas(
-            'eleve',
-            function ($query) use ($idEtablissement) {
-
-                $query->where(
-                    'id_etablissement',
-                    $idEtablissement
-                );
-            }
-        )->count();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Valeurs réservées à l'administration
-        |--------------------------------------------------------------------------
-        */
-
-        $nombreEtablissements = 0;
-
-        $nombreUtilisateurs = 0;
+            $dateCourante->addMonth();
+        }
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | RETOUR DU TABLEAU DE BORD
+    | 7. ACTIVITÉS RÉCENTES
     |--------------------------------------------------------------------------
-    |
-    | Les activités récentes ne sont plus chargées.
-    |
+    */
+
+    $activitesRecentes = \App\Models\JournalActivite::query()
+        ->orderByDesc('date_heure')
+        ->limit(5)
+        ->get();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 8. RETOUR VERS LE DASHBOARD
+    |--------------------------------------------------------------------------
     */
 
     return view('dashboard', compact(
-        'nombreEtablissements',
-        'nombreUtilisateurs',
+        'anneeScolaire',
         'nombreEleves',
         'nombreClasses',
         'nombreEnseignants',
-        'nombrePaiements',
-        'nombreInscriptions',
-        'nombreFrequentations'
+        'tauxFrequentation',
+        'tauxPaiement',
+        'evolutionLabels',
+        'evolutionEffectifs',
+        'activitesRecentes'
     ));
 
-})->middleware(['auth'])->name('dashboard');
-
+})->middleware(['auth', 'verified'])->name('dashboard');
 /*
 |--------------------------------------------------------------------------
 | Élèves

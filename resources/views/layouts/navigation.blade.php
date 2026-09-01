@@ -1,284 +1,606 @@
-<!-- Navigation principale -->
+{{-- ============================================================
+     SIDEBAR PRINCIPALE GESCO
+     ============================================================ --}}
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<aside
+    class="fixed inset-y-0 left-0 z-50 w-64
+           bg-blue-950 text-white
+           flex flex-col shadow-xl"
+>
+
+    {{-- ========================================================
+         EN-TÊTE / LOGO
+         ======================================================== --}}
+    <div class="h-20 flex-shrink-0 px-5 flex items-center border-b border-blue-900">
+
+        <a
+            href="{{ route('dashboard') }}"
+            class="flex items-center gap-3 w-full"
+        >
+
+            <div
+                class="w-11 h-11 rounded-lg bg-white
+                       flex items-center justify-center
+                       shadow-sm flex-shrink-0"
+            >
+                <!-- Logo -->
+                <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-indigo-600 shadow-lg">
+                    <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-10 w-7"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                    >
+                        <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 14l9-5-9-5-9 5 9 5z"
+                        />
+                        <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 14l6.16-3.422A12.083 12.083 0 0118 20.25M12 14L5.84 10.578A12.083 12.083 0 006 20.25M12 14v6"
+                        />
+                    </svg>
+                </div>
+
+            </div>
+
+            <div class="min-w-0">
+
+                <div class="text-xl font-bold tracking-wide">
+                    GESCO
+                </div>
+
+                <div class="text-xs text-blue-200">
+                    Gestion scolaire
+                </div>
+
+            </div>
+
+        </a>
+
+    </div>
 
 
-<div class="flex justify-between h-16">
+    {{-- ========================================================
+         MENU
+         ======================================================== --}}
+    <nav class="flex-1 px-3 py-4 overflow-y-auto">
 
-    <!-- Logo + Navigation -->
-    <div class="flex">
+        {{-- ====================================================
+             TABLEAU DE BORD
+             ==================================================== --}}
+        <div class="mb-5">
 
-        <!-- Logo -->
-        <div class="shrink-0 flex items-center">
+            <a
+                href="{{ route('dashboard') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-3 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('dashboard')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
 
-            <a href="{{ route('dashboard') }}"
-               class="text-xl font-bold text-blue-600">
+                <span class="w-6 text-center text-lg">
+                    🏠
+                </span>
 
-                Gestion Scolaire Complète
+                <span class="font-medium">
+                    Tableau de bord
+                </span>
 
             </a>
 
         </div>
 
 
-        <!-- Navigation Links Desktop -->
-        <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+        {{-- ====================================================
+             GESTION SCOLAIRE
+             ==================================================== --}}
+        <div class="mb-5">
 
-            {{-- Tableau de bord --}}
-            <x-nav-link
-                :href="route('dashboard')"
-                :active="request()->routeIs('dashboard')">
-
-                Tableau de bord
-
-            </x-nav-link>
+            <p class="px-4 mb-2 text-xs font-semibold
+                      uppercase tracking-wider text-blue-300">
+                Gestion scolaire
+            </p>
 
 
-            
+            {{-- Classes --}}
+            <a
+                href="{{ route('classes.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('classes.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">🏫</span>
+                <span>Classes</span>
+            </a>
+
+
+            {{-- Élèves --}}
+            <a
+                href="{{ route('eleves.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('eleves.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">👨‍🎓</span>
+                <span>Élèves</span>
+            </a>
+
+
+            {{-- Inscriptions --}}
+            <a
+                href="{{ route('inscriptions.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('inscriptions.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📋</span>
+                <span>Inscriptions</span>
+            </a>
+
+
+            {{-- Présences --}}
+            <a
+                href="{{ route('presences.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('presences.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📅</span>
+                <span>Présences</span>
+            </a>
+
+
+            {{-- Matières --}}
+            <a
+                href="{{ route('matieres.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('matieres.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📚</span>
+                <span>Matières</span>
+            </a>
+
+
+            {{-- Évaluations --}}
+            <a
+                href="{{ route('evaluations.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('evaluations.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📝</span>
+                <span>Évaluations</span>
+            </a>
+
+
+            {{-- Notes --}}
+            <a
+                href="{{ route('notes.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('notes.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">🧮</span>
+                <span>Notes</span>
+            </a>
+
+
+            {{-- Bulletins --}}
+            <a
+                href="{{ route('bulletins.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('bulletins.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📄</span>
+                <span>Bulletins</span>
+            </a>
 
         </div>
 
-    </div>
+
+        {{-- ====================================================
+             PERSONNEL
+             ==================================================== --}}
+        <div class="mb-5">
+
+            <p class="px-4 mb-2 text-xs font-semibold
+                      uppercase tracking-wider text-blue-300">
+                Personnel
+            </p>
 
 
-    <!-- Menu utilisateur Desktop -->
-    <div class="hidden sm:flex sm:items-center sm:ms-6">
+            {{-- Personnel --}}
+            <a
+                href="{{ route('personnel.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('personnel.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">👨‍🏫</span>
+                <span>Personnel</span>
+            </a>
 
-        <x-dropdown align="right" width="48">
 
-            <!-- Bouton utilisateur -->
-            <x-slot name="trigger">
+            {{-- Affectations enseignants --}}
+            <a
+                href="{{ route('affectations-enseignants.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('affectations-enseignants.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">🔗</span>
+
+                <span class="leading-tight">
+                    Affectations enseignants
+                </span>
+            </a>
+
+        </div>
+
+
+        {{-- ====================================================
+             FINANCES
+             ==================================================== --}}
+        <div class="mb-5">
+
+            <p class="px-4 mb-2 text-xs font-semibold
+                      uppercase tracking-wider text-blue-300">
+                Finances
+            </p>
+
+
+            {{-- Catégories frais --}}
+            <a
+                href="{{ route('categories-frais.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('categories-frais.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">🧾</span>
+
+                <span class="leading-tight">
+                    Catégories frais scolaires
+                </span>
+            </a>
+
+
+            {{-- Tarifs scolaires --}}
+            <a
+                href="{{ route('tarifs-scolaires.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('tarifs-scolaires.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">💵</span>
+
+                <span>
+                    Frais scolaires / Tarifs
+                </span>
+            </a>
+
+
+            {{-- Paiements --}}
+            <a
+                href="{{ route('paiements.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('paiements.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">💰</span>
+                <span>Paiements</span>
+            </a>
+
+
+            {{-- Recettes --}}
+            <a
+                href="{{ route('recettes.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('recettes.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📈</span>
+                <span>Recettes</span>
+            </a>
+
+
+            {{-- Dépenses --}}
+            <a
+                href="{{ route('depenses.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('depenses.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📉</span>
+                <span>Dépenses</span>
+            </a>
+
+        </div>
+
+
+        {{-- ====================================================
+             ADMINISTRATION
+             ==================================================== --}}
+        <div class="mb-5">
+
+            <p class="px-4 mb-2 text-xs font-semibold
+                      uppercase tracking-wider text-blue-300">
+                Administration
+            </p>
+
+
+            {{-- Années scolaires --}}
+            <a
+                href="{{ route('annees-scolaires.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('annees-scolaires.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📅</span>
+                <span>Années scolaires</span>
+            </a>
+
+
+            {{-- Périodes scolaires --}}
+            <a
+                href="{{ route('periodes-scolaires.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('periodes-scolaires.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">🗓️</span>
+                <span>Périodes scolaires</span>
+            </a>
+
+
+            {{-- Infrastructures --}}
+            <a
+                href="{{ route('infrastructures.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('infrastructures.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">🏢</span>
+                <span>Infrastructures</span>
+            </a>
+
+
+            {{-- Journal activités --}}
+            <a
+                href="{{ route('journal-activites.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('journal-activites.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📋</span>
+                <span>Journal activités</span>
+            </a>
+
+
+            {{-- Rapports --}}
+            <a
+                href="{{ route('rapports.index') }}"
+                class="
+                    flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    transition duration-150
+                    {{ request()->routeIs('rapports.*')
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-transparent text-white hover:bg-blue-900' }}
+                "
+            >
+                <span class="w-6 text-center">📊</span>
+                <span>Rapports</span>
+            </a>
+
+        </div>
+
+    </nav>
+
+
+    {{-- ========================================================
+         UTILISATEUR / DÉCONNEXION
+         ======================================================== --}}
+    @auth
+
+        <div class="flex-shrink-0 border-t border-blue-900 p-4">
+
+            <div class="flex items-center gap-3 mb-3">
+
+                <div
+                    class="w-10 h-10 rounded-full
+                           bg-blue-500
+                           flex items-center justify-center
+                           flex-shrink-0"
+                >
+                    <span class="font-bold text-white">
+
+                        {{ strtoupper(
+                            substr(
+                                Auth::user()?->nom ?? 'U',
+                                0,
+                                1
+                            )
+                        ) }}
+
+                    </span>
+                </div>
+
+
+                <div class="min-w-0">
+
+                    <p class="font-medium text-white truncate">
+
+                        {{ Auth::user()?->nom ?? 'Utilisateur' }}
+
+                    </p>
+
+                    <p class="text-xs text-blue-300 truncate">
+
+                        {{ Auth::user()?->email ?? '' }}
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            {{-- Profil --}}
+            <a
+                href="{{ route('profile.edit') }}"
+                class="
+                    w-full flex items-center gap-3
+                    px-4 py-2.5 rounded-lg
+                    text-white
+                    hover:bg-blue-900
+                    transition duration-150
+                    mb-1
+                "
+            >
+                <span class="w-6 text-center">⚙️</span>
+                <span>Paramètres</span>
+            </a>
+
+
+            {{-- Déconnexion --}}
+            <form
+                method="POST"
+                action="{{ route('logout') }}"
+            >
+
+                @csrf
 
                 <button
-                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                    type="submit"
+                    class="
+                        w-full flex items-center gap-3
+                        px-4 py-2.5 rounded-lg
+                        text-white
+                        hover:bg-red-600
+                        transition duration-150
+                    "
+                >
 
-                    <div>
-                        {{ Auth::user()?->nom ?? 'Utilisateur' }}
-                    </div>
+                    <span class="w-6 text-center">
+                        🚪
+                    </span>
 
-                    <div class="ms-1">
-
-                        <svg
-                            class="fill-current h-4 w-4"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20">
-
-                            <path
-                                fill-rule="evenodd"
-                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                clip-rule="evenodd" />
-
-                        </svg>
-
-                    </div>
+                    <span>
+                        Déconnexion
+                    </span>
 
                 </button>
 
-            </x-slot>
-
-
-            <!-- Menu déroulant -->
-            <x-slot name="content">
-
-                <!-- Déconnexion -->
-                <form method="POST" action="{{ route('logout') }}">
-
-                    @csrf
-
-                    <x-dropdown-link
-                        :href="route('logout')"
-                        onclick="event.preventDefault();
-                        this.closest('form').submit();">
-
-                        Déconnexion
-
-                    </x-dropdown-link>
-
-                </form>
-
-            </x-slot>
-
-        </x-dropdown>
-
-    </div>
-
-
-    <!-- Bouton mobile -->
-    <div class="-me-2 flex items-center sm:hidden">
-
-        <button
-            @click="open = ! open"
-            class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-
-            <svg
-                class="h-6 w-6"
-                stroke="currentColor"
-                fill="none"
-                viewBox="0 0 24 24">
-
-                <!-- Menu -->
-                <path
-                    :class="{
-                        'hidden': open,
-                        'inline-flex': !open
-                    }"
-                    class="inline-flex"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6h16M4 12h16M4 18h16" />
-
-                <!-- Fermer -->
-                <path
-                    :class="{
-                        'hidden': !open,
-                        'inline-flex': open
-                    }"
-                    class="hidden"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12" />
-
-            </svg>
-
-        </button>
-
-    </div>
-
-</div>
-
-
-</div>
-
-<!-- Navigation mobile -->
-
-<div
-    :class="{
-        'block': open,
-        'hidden': !open
-    }"
-    class="hidden sm:hidden">
-
-
-<!-- Liens de navigation mobile -->
-<div class="pt-2 pb-3 space-y-1">
-
-
-    {{-- Tableau de bord --}}
-    <x-responsive-nav-link
-        :href="route('dashboard')"
-        :active="request()->routeIs('dashboard')">
-
-        Tableau de bord
-
-    </x-responsive-nav-link>
-
-
-    {{-- Élèves --}}
-    <x-responsive-nav-link
-        :href="route('eleves.index')"
-        :active="request()->routeIs('eleves.*')">
-
-        Élèves
-
-    </x-responsive-nav-link>
-
-
-    {{-- Inscriptions --}}
-    <x-responsive-nav-link
-        :href="route('inscriptions.index')"
-        :active="request()->routeIs('inscriptions.*')">
-
-        Inscriptions
-
-    </x-responsive-nav-link>
-
-
-    {{-- Tarifs scolaires --}}
-    <x-responsive-nav-link
-        :href="route('tarifs-scolaires.index')"
-        :active="request()->routeIs('tarifs-scolaires.*')">
-
-        Tarifs scolaires
-
-    </x-responsive-nav-link>
-
-
-    {{-- Catégories de frais --}}
-    <x-responsive-nav-link
-        :href="route('categories-frais.index')"
-        :active="request()->routeIs('categories-frais.*')">
-
-        Catégories de frais
-
-    </x-responsive-nav-link>
-
-
-    {{-- Paiements --}}
-    <x-responsive-nav-link
-        :href="route('paiements.index')"
-        :active="request()->routeIs('paiements.*')">
-
-        Paiements
-
-    </x-responsive-nav-link>
-
-
-    {{-- Personnel --}}
-    <x-responsive-nav-link
-        :href="route('personnel.index')"
-        :active="request()->routeIs('personnel.*')">
-
-        Personnel
-
-    </x-responsive-nav-link>
-
-
-</div>
-
-
-<!-- Informations utilisateur -->
-<div class="pt-4 pb-1 border-t border-gray-200">
-
-    <div class="px-4">
-
-        <div class="font-medium text-base text-gray-800">
-
-            {{ Auth::user()?->nom ?? 'Utilisateur' }}
+            </form>
 
         </div>
 
-        <div class="font-medium text-sm text-gray-500">
+    @endauth
 
-            {{ Auth::user()?->email ?? '' }}
-
-        </div>
-
-    </div>
-
-
-    <!-- Déconnexion mobile -->
-    <div class="mt-3 space-y-1">
-
-        <form method="POST" action="{{ route('logout') }}">
-
-            @csrf
-
-            <x-responsive-nav-link
-                :href="route('logout')"
-                onclick="event.preventDefault();
-                this.closest('form').submit();">
-
-                Déconnexion
-
-            </x-responsive-nav-link>
-
-        </form>
-
-    </div>
-
-</div>
-
-
-</div>
+</aside>
