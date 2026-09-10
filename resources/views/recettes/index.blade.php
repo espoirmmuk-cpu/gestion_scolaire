@@ -7,7 +7,7 @@
         <div>
 
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Gestion des récettes
+                Gestion des recettes
             </h2>
 
             <p class="text-sm text-gray-500 mt-1">
@@ -25,7 +25,7 @@
 
                 <span class="mr-2 text-lg">+</span>
 
-                Nouvelle récette
+                Nouvelle recette
 
             </a>
 
