@@ -1,174 +1,171 @@
 <x-app-layout>
 
-    <x-slot name="header">
+<x-slot name="header">
 
-        <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between">
 
-            <div>
+        <div>
 
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Gestion des recettes
-                </h2>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                Gestion des récettes
+            </h2>
 
-                <p class="text-sm text-gray-500 mt-1">
-                    Gestion des entrées financières de l'établissement
-                </p>
-
-            </div>
-
-            @can('create', App\Models\Recette::class)
-
-                <a href="{{ route('recettes.create') }}"
-                   class="inline-flex items-center px-5 py-2.5
-                          bg-gray-600 text-white rounded-lg
-                          hover:bg-gray-700 transition">
-
-                    <span class="mr-2 text-lg">+</span>
-
-                    Nouvelle recette
-
-                </a>
-
-            @endcan
-
-                    <a href="{{ route('caisse.index') }}"
-                    class="inline-flex items-center px-4 py-2.5
-                            bg-gray-600 text-white rounded-lg
-                            hover:bg-gray-700 transition">
-
-                        📊 Situation de caisse 
-
-                    </a>
-
-                </div>
+            <p class="text-sm text-gray-500 mt-1">
+                Gestion des entrées financières de l'établissement
+            </p>
 
         </div>
 
-    </x-slot>
+        @can('create', App\Models\Depense::class)
+
+            <a href="{{ route('recettes.create') }}"
+               class="inline-flex items-center px-5 py-2.5
+                      bg-gray-600 text-white rounded-lg
+                      hover:bg-gray-700 transition">
+
+                <span class="mr-2 text-lg">+</span>
+
+                Nouvelle récette
+
+            </a>
+
+        @endcan
+
+        <a href="{{ route('caisse.index') }}"
+            class="inline-flex items-center px-4 py-2.5
+                    bg-gray-600 text-white rounded-lg
+                    hover:bg-gray-700 transition">
+
+                📊 Situation de caisse 
+
+            </a>
+
+        </div>
+
+</x-slot>
+
+<div class="py-6 bg-gray-100 min-h-screen">
+
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
 
-    <div class="py-6 bg-gray-100 min-h-screen">
+        {{-- ========================================================= --}}
+        {{-- MESSAGES --}}
+        {{-- ========================================================= --}}
 
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        @if(session('success'))
+
+            <div class="mb-5 px-4 py-3
+                        bg-green-100 border border-green-300
+                        text-green-800 rounded-lg">
+
+                {{ session('success') }}
+
+            </div>
+
+        @endif
 
 
-            {{-- ========================================================= --}}
-            {{-- MESSAGES --}}
-            {{-- ========================================================= --}}
+        @if(session('error'))
 
-            @if(session('success'))
+            <div class="mb-5 px-4 py-3
+                        bg-red-100 border border-red-300
+                        text-red-800 rounded-lg">
 
-                <div class="mb-5 px-4 py-3
-                            bg-green-100 border border-green-300
-                            text-green-800 rounded-lg">
+                {{ session('error') }}
 
-                    {{ session('success') }}
+            </div>
 
+        @endif
+
+
+        @if($errors->any())
+
+            <div class="mb-5 px-4 py-3
+                        bg-red-100 border border-red-300
+                        text-red-800 rounded-lg">
+
+                <div class="font-semibold mb-2">
+                    Veuillez corriger les erreurs suivantes :
                 </div>
 
-            @endif
+                <ul class="list-disc list-inside text-sm">
 
+                    @foreach($errors->all() as $error)
 
-            @if(session('error'))
+                        <li>{{ $error }}</li>
 
-                <div class="mb-5 px-4 py-3
-                            bg-red-100 border border-red-300
-                            text-red-800 rounded-lg">
+                    @endforeach
 
-                    {{ session('error') }}
+                </ul>
 
-                </div>
+            </div>
 
-            @endif
+        @endif
 
-
-            @if($errors->any())
-
-                <div class="mb-5 px-4 py-3
-                            bg-red-100 border border-red-300
-                            text-red-800 rounded-lg">
-
-                    <div class="font-semibold mb-2">
-                        Veuillez corriger les erreurs suivantes :
-                    </div>
-
-                    <ul class="list-disc list-inside text-sm">
-
-                        @foreach($errors->all() as $error)
-
-                            <li>{{ $error }}</li>
-
-                        @endforeach
-
-                    </ul>
-
-                </div>
-
-            @endif
-
-{{-- ========================================================= --}}
+        {{-- ========================================================= --}}
         {{-- SITUATION DE CAISSE --}}
         {{-- ========================================================= --}}
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
 
 
-            {{-- CAISSE USD --}}
+    {{-- CAISSE USD --}}
 
-            <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="bg-white rounded-xl shadow-sm p-6">
 
-                <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-4">
 
-                    <div>
+                <div>
 
-                        <h3 class="text-lg font-semibold text-gray-800">
-                            Situation de caisse USD
-                        </h3>
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        Situation de caisse USD
+                    </h3>
 
-                        <p class="text-sm text-gray-500">
-                            Recettes - Dépenses
-                        </p>
+                    <p class="text-sm text-gray-500">
+                        Recettes - Dépenses
+                    </p>
 
-                    </div>
+                </div>
 
-                    <div class="text-3xl">
-                        💰
-                    </div>
+                <div class="text-3xl">
+                    💰
+                </div>
+
+            </div>
+
+
+            <div class="space-y-3">
+
+                <div class="flex justify-between">
+
+                    <span class="text-sm text-gray-600">
+                        Total recettes
+                    </span>
+
+                    <span class="font-semibold text-gray-800">
+
+                        {{ number_format(
+                            (float) $totalRecettesUSD,
+                            2,
+                            ',',
+                            ' '
+                        ) }}
+
+                        USD
+
+                    </span>
 
                 </div>
 
 
-                <div class="space-y-3">
+                <div class="flex justify-between">
 
-                    <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">
+                        Total dépenses
+                    </span>
 
-                        <span class="text-sm text-gray-600">
-                            Total recettes
-                        </span>
-
-                        <span class="font-semibold text-gray-800">
-
-                            {{ number_format(
-                                (float) $totalRecettesUSD,
-                                2,
-                                ',',
-                                ' '
-                            ) }}
-
-                            USD
-
-                        </span>
-
-                    </div>
-
-
-                    <div class="flex justify-between">
-
-                        <span class="text-sm text-gray-600">
-                            Total dépenses
-                        </span>
-
-                        <span class="font-semibold text-gray-800">
+                    <span class="font-semibold text-gray-800">
 
                             {{ number_format(
                                 (float) $totalDepensesUSD,
@@ -179,18 +176,18 @@
 
                             USD
 
-                        </span>
+                    </span>
 
-                    </div>
+                </div>
 
 
-                    <div class="border-t pt-3 flex justify-between">
+                <div class="border-t pt-3 flex justify-between">
 
-                        <span class="font-semibold text-gray-700">
+                    <span class="font-semibold text-gray-700">
                             Solde
-                        </span>
+                    </span>
 
-                        <span class="font-bold
+                    <span class="font-bold
                             {{ $soldeUSD >= 0
                                 ? 'text-green-600'
                                 : 'text-red-600' }}">
@@ -204,49 +201,49 @@
 
                             USD
 
-                        </span>
-
-                    </div>
+                    </span>
 
                 </div>
 
             </div>
 
+        </div>
+
 
             {{-- CAISSE CDF --}}
 
-            <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="bg-white rounded-xl shadow-sm p-6">
 
-                <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-4">
 
-                    <div>
+                <div>
 
-                        <h3 class="text-lg font-semibold text-gray-800">
+                    <h3 class="text-lg font-semibold text-gray-800">
                             Situation de caisse CDF
-                        </h3>
+                    </h3>
 
-                        <p class="text-sm text-gray-500">
+                    <p class="text-sm text-gray-500">
                             Recettes - Dépenses
-                        </p>
-
-                    </div>
-
-                    <div class="text-3xl">
-                        💵
-                    </div>
+                    </p>
 
                 </div>
 
+                <div class="text-3xl">
+                        💵
+                </div>
 
-                <div class="space-y-3">
+            </div>
 
-                    <div class="flex justify-between">
 
-                        <span class="text-sm text-gray-600">
+            <div class="space-y-3">
+
+                <div class="flex justify-between">
+
+                    <span class="text-sm text-gray-600">
                             Total recettes
-                        </span>
+                    </span>
 
-                        <span class="font-semibold text-gray-800">
+                    <span class="font-semibold text-gray-800">
 
                             {{ number_format(
                                 (float) $totalRecettesCDF,
@@ -257,18 +254,18 @@
 
                             CDF
 
-                        </span>
+                    </span>
 
-                    </div>
+                </div>
 
 
-                    <div class="flex justify-between">
+                <div class="flex justify-between">
 
-                        <span class="text-sm text-gray-600">
+                    <span class="text-sm text-gray-600">
                             Total dépenses
-                        </span>
+                    </span>
 
-                        <span class="font-semibold text-gray-800">
+                    <span class="font-semibold text-gray-800">
 
                             {{ number_format(
                                 (float) $totalDepensesCDF,
@@ -279,18 +276,18 @@
 
                             CDF
 
-                        </span>
+                    </span>
 
-                    </div>
+                </div>
 
 
-                    <div class="border-t pt-3 flex justify-between">
+                <div class="border-t pt-3 flex justify-between">
 
-                        <span class="font-semibold text-gray-700">
+                    <span class="font-semibold text-gray-700">
                             Solde
-                        </span>
+                    </span>
 
-                        <span class="font-bold
+                    <span class="font-bold
                             {{ $soldeCDF >= 0
                                 ? 'text-green-600'
                                 : 'text-red-600' }}">
@@ -304,70 +301,70 @@
 
                             CDF
 
-                        </span>
-
-                    </div>
+                    </span>
 
                 </div>
 
             </div>
 
         </div>
+
+    </div>
                
 
 
-            {{-- ========================================================= --}}
-            {{-- FILTRES --}}
-            {{-- ========================================================= --}}
+        {{-- ========================================================= --}}
+        {{-- FILTRES --}}
+        {{-- ========================================================= --}}
 
-            <div class="bg-white shadow-sm rounded-xl mb-6">
+        <div class="bg-white shadow-sm rounded-xl mb-6">
 
-                <div class="p-6">
+            <div class="p-6">
 
-                    <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center justify-between mb-5">
 
-                        <div>
+                    <div>
 
-                            <h3 class="text-lg font-semibold text-gray-800">
+                        <h3 class="text-lg font-semibold text-gray-800">
                                 Rechercher une recette
-                            </h3>
+                        </h3>
 
-                            <p class="text-sm text-gray-500 mt-1">
+                        <p class="text-sm text-gray-500 mt-1">
                                 Les totaux ci-dessus correspondent aux filtres sélectionnés.
-                            </p>
-
-                        </div>
+                        </p>
 
                     </div>
 
+                </div>
 
-                    <form method="GET"
+
+                <form method="GET"
                           action="{{ route('recettes.index') }}">
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
 
 
-                            {{-- ANNÉE SCOLAIRE --}}
+                        {{-- ANNÉE SCOLAIRE --}}
 
-                            <div>
+                        <div>
 
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Année scolaire
-                                </label>
+                            </label>
 
-                                <select
+                            <select
                                     name="id_annee_scolaire"
                                     class="w-full rounded-lg border-gray-300
                                            focus:border-gray-500
                                            focus:ring-gray-500">
 
-                                    <option value="">
+                                <option value="">
                                         Toutes les années
-                                    </option>
+                                </option>
 
-                                    @foreach($anneesScolaires as $annee)
+                                @foreach($anneesScolaires as $annee)
 
-                                        <option
+                                    <option
                                             value="{{ $annee->id_annee_scolaire }}"
                                             @selected(
                                                 request('id_annee_scolaire')
@@ -379,64 +376,64 @@
                                                 ?? $annee->nom
                                                 ?? $annee->id_annee_scolaire }}
 
-                                        </option>
+                                    </option>
 
-                                    @endforeach
+                                @endforeach
 
-                                </select>
+                            </select>
 
-                            </div>
+                        </div>
 
 
                             {{-- DATE DÉBUT --}}
 
-                            <div>
+                        <div>
 
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Date début
-                                </label>
+                            </label>
 
-                                <input
+                            <input
                                     type="date"
                                     name="date_debut"
                                     value="{{ request('date_debut') }}"
                                     class="w-full rounded-lg border-gray-300
                                            focus:border-gray-500
                                            focus:ring-gray-500"
-                                >
+                            >
 
-                            </div>
+                        </div>
 
 
                             {{-- DATE FIN --}}
 
-                            <div>
+                        <div>
 
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Date fin
-                                </label>
+                            </label>
 
-                                <input
+                            <input
                                     type="date"
                                     name="date_fin"
                                     value="{{ request('date_fin') }}"
                                     class="w-full rounded-lg border-gray-300
                                            focus:border-gray-500
                                            focus:ring-gray-500"
-                                >
+                            >
 
-                            </div>
+                        </div>
 
 
                             {{-- SOURCE --}}
 
-                            <div>
+                        <div>
 
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Source
-                                </label>
+                            </label>
 
-                                <input
+                            <input
                                     type="text"
                                     name="source"
                                     value="{{ request('source') }}"
@@ -445,63 +442,63 @@
                                     class="w-full rounded-lg border-gray-300
                                            focus:border-gray-500
                                            focus:ring-gray-500"
-                                >
+                            >
 
-                                <datalist id="sources">
+                            <datalist id="sources">
 
-                                    @foreach($sources as $source)
+                                @foreach($sources as $source)
 
-                                        <option value="{{ $source }}">
+                                    <option value="{{ $source }}">
 
-                                    @endforeach
+                                @endforeach
 
-                                </datalist>
+                            </datalist>
 
-                            </div>
+                        </div>
 
 
                             {{-- DEVISE --}}
 
-                            <div>
+                        <div>
 
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Devise
-                                </label>
+                            </label>
 
-                                <select
+                            <select
                                     name="devise"
                                     class="w-full rounded-lg border-gray-300
                                            focus:border-gray-500
                                            focus:ring-gray-500">
 
-                                    <option value="">
+                                <option value="">
                                         Toutes les devises
-                                    </option>
+                                </option>
 
-                                    @foreach($devises as $devise)
+                                @foreach($devises as $devise)
 
-                                        <option
+                                    <option
                                             value="{{ $devise }}"
                                             @selected(request('devise') == $devise)>
 
                                             {{ $devise }}
 
-                                        </option>
+                                    </option>
 
-                                    @endforeach
+                                @endforeach
 
-                                </select>
-
-                            </div>
+                            </select>
 
                         </div>
+
+                    </div>
 
 
                         {{-- BOUTONS --}}
 
-                        <div class="mt-5 flex flex-wrap gap-3">
+                    <div class="mt-5 flex flex-wrap gap-3">
 
-                            <button
+                        <button
                                 type="submit"
                                 class="px-5 py-2.5
                                        bg-gray-700 text-white
@@ -510,18 +507,18 @@
 
                                 Rechercher
 
-                            </button>
+                        </button>
 
 
-                            @if(request()->hasAny([
+                        @if(request()->hasAny([
                                 'id_annee_scolaire',
                                 'date_debut',
                                 'date_fin',
                                 'source',
                                 'devise'
-                            ]))
+                        ]))
 
-                                <a
+                            <a
                                     href="{{ route('recettes.index') }}"
                                     class="px-5 py-2.5
                                            bg-gray-200 text-gray-700
@@ -530,239 +527,239 @@
 
                                     Réinitialiser
 
-                                </a>
+                            </a>
 
-                            @endif
+                        @endif
 
-                        </div>
+                    </div>
 
-                    </form>
-
-                </div>
+                </form>
 
             </div>
 
+        </div>
+
         
 
-            {{-- ========================================================= --}}
-            {{-- LISTE DES RECETTES --}}
-            {{-- ========================================================= --}}
+        {{-- ========================================================= --}}
+        {{-- LISTE DES RECETTES --}}
+        {{-- ========================================================= --}}
 
-            <div class="bg-white shadow-sm rounded-xl overflow-hidden">
+        <div class="bg-white shadow-sm rounded-xl overflow-hidden">
 
 
-                {{-- EN-TÊTE --}}
+            {{-- EN-TÊTE --}}
 
-                <div class="px-6 py-4 border-b border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
 
-                    <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between">
 
-                        <div>
+                    <div>
 
-                            <h3 class="text-lg font-semibold text-gray-800">
+                        <h3 class="text-lg font-semibold text-gray-800">
                                 Liste des recettes
-                            </h3>
+                        </h3>
 
-                            <p class="text-sm text-gray-500 mt-1">
+                        <p class="text-sm text-gray-500 mt-1">
 
                                 {{ $recettes->total() }}
 
                                 recette(s)
 
-                            </p>
-
-                        </div>
+                        </p>
 
                     </div>
 
                 </div>
 
+            </div>
 
-                {{-- TABLEAU --}}
 
-                <div class="overflow-x-auto">
+            {{-- TABLEAU --}}
 
-                    <table class="min-w-full divide-y divide-gray-200">
+            <div class="overflow-x-auto">
 
-                        <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-gray-200">
 
-                            <tr>
+                    <thead class="bg-gray-50">
 
-                                <th class="px-6 py-3 text-left text-xs
+                        <tr>
+
+                            <th class="px-6 py-3 text-left text-xs
                                            font-semibold text-gray-600 uppercase">
 
                                     Date
 
-                                </th>
+                            </th>
 
 
-                                <th class="px-6 py-3 text-left text-xs
+                            <th class="px-6 py-3 text-left text-xs
                                            font-semibold text-gray-600 uppercase">
 
                                     Source
 
-                                </th>
+                            </th>
 
 
-                                <th class="px-6 py-3 text-left text-xs
+                            <th class="px-6 py-3 text-left text-xs
                                            font-semibold text-gray-600 uppercase">
 
                                     Année scolaire
 
-                                </th>
+                            </th>
 
 
-                                <th class="px-6 py-3 text-right text-xs
+                            <th class="px-6 py-3 text-right text-xs
                                            font-semibold text-gray-600 uppercase">
 
                                     Montant
 
-                                </th>
+                            </th>
 
 
-                                <th class="px-6 py-3 text-left text-xs
+                            <th class="px-6 py-3 text-left text-xs
                                            font-semibold text-gray-600 uppercase">
 
                                     Description
 
-                                </th>
+                            </th>
 
 
-                                <th class="px-6 py-3 text-right text-xs
+                            <th class="px-6 py-3 text-right text-xs
                                            font-semibold text-gray-600 uppercase">
 
                                     Actions
 
-                                </th>
+                            </th>
 
-                            </tr>
+                        </tr>
 
-                        </thead>
-
-
-                        <tbody class="bg-white divide-y divide-gray-200">
+                    </thead>
 
 
-                            @forelse($recettes as $recette)
-
-                                <tr class="hover:bg-gray-50">
+                    <tbody class="bg-white divide-y divide-gray-200">
 
 
-                                    {{-- DATE --}}
+                        @forelse($recettes as $recette)
 
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                            <tr class="hover:bg-gray-50">
 
-                                        <div class="text-sm font-medium text-gray-900">
+
+                                {{-- DATE --}}
+
+                                <td class="px-6 py-4 whitespace-nowrap">
+
+                                    <div class="text-sm font-medium text-gray-900">
 
                                             {{ $recette->date_recette
                                                 ? $recette->date_recette->format('d/m/Y')
                                                 : '-' }}
 
-                                        </div>
+                                    </div>
 
-                                    </td>
+                                </td>
 
 
-                                    {{-- SOURCE --}}
+                                {{-- SOURCE --}}
 
-                                    <td class="px-6 py-4">
+                                <td class="px-6 py-4">
 
-                                        <div class="text-sm font-semibold text-gray-900">
+                                    <div class="text-sm font-semibold text-gray-900">
 
                                             {{ $recette->source }}
 
-                                        </div>
+                                    </div>
 
-                                    </td>
+                                </td>
 
 
-                                    {{-- ANNÉE SCOLAIRE --}}
+                                {{-- ANNÉE SCOLAIRE --}}
 
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-6 py-4 whitespace-nowrap">
 
-                                        <div class="text-sm text-gray-700">
+                                    <div class="text-sm text-gray-700">
 
-                                            @if($recette->anneeScolaire)
+                                        @if($recette->anneeScolaire)
 
                                                 {{ $recette->anneeScolaire->libelle
                                                     ?? $recette->anneeScolaire->annee
                                                     ?? $recette->anneeScolaire->nom
                                                     ?? '-' }}
 
-                                            @else
+                                        @else
 
                                                 -
 
-                                            @endif
+                                        @endif
 
-                                        </div>
+                                    </div>
 
-                                    </td>
+                                </td>
 
 
-                                    {{-- MONTANT --}}
+                                {{-- MONTANT --}}
 
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
 
-                                        <div class="text-sm font-bold text-gray-900">
+                                    <div class="text-sm font-bold text-gray-900">
 
-                                            {{ number_format(
+                                        {{ number_format(
                                                 (float) $recette->montant,
                                                 2,
                                                 ',',
                                                 ' '
-                                            ) }}
+                                        ) }}
 
-                                            <span class="text-xs text-gray-500">
+                                        <span class="text-xs text-gray-500">
 
                                                 {{ $recette->devise }}
 
-                                            </span>
+                                        </span>
 
-                                        </div>
+                                    </div>
 
-                                    </td>
+                                </td>
 
 
-                                    {{-- DESCRIPTION --}}
+                                {{-- DESCRIPTION --}}
 
-                                    <td class="px-6 py-4">
+                                <td class="px-6 py-4">
 
-                                        <div class="text-sm text-gray-600">
+                                    <div class="text-sm text-gray-600">
 
-                                            @if($recette->description)
+                                        @if($recette->description)
 
                                                 {{ \Illuminate\Support\Str::limit(
                                                     $recette->description,
                                                     70
                                                 ) }}
 
-                                            @else
+                                        @else
 
                                                 -
 
-                                            @endif
+                                        @endif
 
-                                        </div>
+                                    </div>
 
-                                    </td>
-
-
-                                    {{-- ACTIONS --}}
-
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">
-
-                                        <div class="flex justify-end gap-2">
+                                </td>
 
 
-                                            @can('view', $recette)
+                                {{-- ACTIONS --}}
 
-                                                <a
-                                                    href="{{ route(
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+
+                                    <div class="flex justify-end gap-2">
+
+
+                                        @can('view', $recette)
+
+                                            <a
+                                                href="{{ route(
                                                         'recettes.show',
                                                         $recette
-                                                    ) }}"
-                                                    class="px-3 py-1.5
+                                                ) }}"
+                                                class="px-3 py-1.5
                                                            bg-gray-100 text-gray-700
                                                            rounded-lg
                                                            hover:bg-gray-200
@@ -770,13 +767,13 @@
 
                                                     Voir
 
-                                                </a>
+                                            </a>
 
-                                            @endcan
+                                        @endcan
                                             
-                                            @can('view', $recette)
+                                        @can('view', $recette)
 
-                                                <a href="{{ route('recettes.recu', $recette) }}"
+                                            <a href="{{ route('recettes.recu', $recette) }}"
                                                 target="_blank"
                                                 class="px-3 py-1.5
                                                         bg-gray-100 text-gray-700
@@ -786,13 +783,13 @@
 
                                                     🖨️ Reçu
 
-                                                </a>
+                                            </a>
 
-                                            @endcan
+                                        @endcan
 
-                                            @can('update', $recette)
+                                        @can('update', $recette)
 
-                                                <a
+                                            <a
                                                     href="{{ route(
                                                         'recettes.edit',
                                                         $recette
@@ -805,14 +802,14 @@
 
                                                     Modifier
 
-                                                </a>
+                                            </a>
 
-                                            @endcan
+                                        @endcan
 
 
-                                            @can('delete', $recette)
+                                        @can('delete', $recette)
 
-                                                <form
+                                            <form
                                                     method="POST"
                                                     action="{{ route(
                                                         'recettes.destroy',
@@ -826,7 +823,7 @@
 
                                                     @method('DELETE')
 
-                                                    <button
+                                                <button
                                                         type="submit"
                                                         class="px-3 py-1.5
                                                                bg-gray-200 text-gray-700
@@ -836,47 +833,47 @@
 
                                                         Supprimer
 
-                                                    </button>
+                                                </button>
 
-                                                </form>
+                                            </form>
 
-                                            @endcan
+                                        @endcan
 
-                                        </div>
+                                    </div>
 
-                                    </td>
+                                </td>
 
-                                </tr>
+                            </tr>
 
 
-                            @empty
+                        @empty
 
-                                <tr>
+                            <tr>
 
-                                    <td
+                                <td
                                         colspan="6"
                                         class="px-6 py-12 text-center">
 
-                                        <div class="text-gray-400 text-4xl mb-3">
+                                    <div class="text-gray-400 text-4xl mb-3">
                                             💰
-                                        </div>
+                                    </div>
 
-                                        <p class="text-gray-600 font-medium">
+                                    <p class="text-gray-600 font-medium">
 
                                             Aucune recette trouvée.
 
-                                        </p>
+                                    </p>
 
-                                        <p class="text-sm text-gray-400 mt-1">
+                                    <p class="text-sm text-gray-400 mt-1">
 
                                             Commencez par enregistrer une nouvelle recette.
 
-                                        </p>
+                                    </p>
 
 
-                                        @can('create', App\Models\Recette::class)
+                                    @can('create', App\Models\Recette::class)
 
-                                            <a
+                                        <a
                                                 href="{{ route('recettes.create') }}"
                                                 class="inline-block mt-5
                                                        px-5 py-2.5
@@ -886,42 +883,42 @@
 
                                                 Ajouter une recette
 
-                                            </a>
+                                        </a>
 
-                                        @endcan
+                                    @endcan
 
-                                    </td>
+                                </td>
 
-                                </tr>
+                            </tr>
 
-                            @endforelse
-
-
-                        </tbody>
-
-                    </table>
-
-                </div>
+                        @endforelse
 
 
-                {{-- ===================================================== --}}
-                {{-- PAGINATION --}}
-                {{-- ===================================================== --}}
+                    </tbody>
 
-                @if($recettes->hasPages())
+                </table>
 
-                    <div class="px-6 py-4 border-t border-gray-200">
+            </div>
+
+
+            {{-- ===================================================== --}}
+            {{-- PAGINATION --}}
+            {{-- ===================================================== --}}
+
+            @if($recettes->hasPages())
+
+                <div class="px-6 py-4 border-t border-gray-200">
 
                         {{ $recettes->links() }}
 
-                    </div>
+                </div>
 
-                @endif
-
-            </div>
+            @endif
 
         </div>
 
     </div>
 
-</x-app-layout>
+</div>
+
+</x-app-layout>    
