@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Contact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -57,11 +58,24 @@ class ContactController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | DESTINATAIRE
+        | ENREGISTREMENT DU MESSAGE DANS GESCO
         |--------------------------------------------------------------------------
-        |
-        | Pour l'instant, l'adresse est récupérée depuis .env.
-        |
+        */
+
+        $contact = Contact::create([
+            'nom' => $validated['nom'],
+            'email' => $validated['email'],
+            'sujet' => $validated['sujet'],
+            'message' => $validated['message'],
+            'lu' => false,
+            'date_lu' => null,
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DESTINATAIRE EMAIL
+        |--------------------------------------------------------------------------
         */
 
         $destinataire = env(
@@ -72,34 +86,42 @@ class ContactController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | ENVOI DU MESSAGE
+        | ENVOI DE LA COPIE PAR EMAIL
         |--------------------------------------------------------------------------
         */
 
         try {
 
             Mail::raw(
-                $validated['message'],
-                function ($mail) use ($validated, $destinataire) {
+                "Nouveau message reçu depuis le formulaire de contact GESCO.\n\n"
+                . "Nom : " . $validated['nom'] . "\n"
+                . "Email : " . $validated['email'] . "\n"
+                . "Sujet : " . $validated['sujet'] . "\n\n"
+                . "Message :\n"
+                . $validated['message'],
+                function ($mail) use (
+                    $validated,
+                    $destinataire
+                ) {
 
                     $mail->to($destinataire)
 
-                         ->replyTo(
-                             $validated['email'],
-                             $validated['nom']
-                         )
+                        ->replyTo(
+                            $validated['email'],
+                            $validated['nom']
+                        )
 
-                         ->subject(
-                             '[Gestion Scolaire] ' .
-                             $validated['sujet']
-                         );
+                        ->subject(
+                            '[GESCO] '
+                            . $validated['sujet']
+                        );
                 }
             );
 
 
             /*
             |--------------------------------------------------------------------------
-            | RETOUR À LA PAGE DE CONTACT
+            | MESSAGE DE SUCCÈS
             |--------------------------------------------------------------------------
             */
 
@@ -114,16 +136,19 @@ class ContactController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | EN CAS D'ERREUR D'ENVOI
+            | LE MESSAGE EST DÉJÀ ENREGISTRÉ
             |--------------------------------------------------------------------------
+            |
+            | Même si l'email n'a pas pu être envoyé,
+            | le message reste disponible dans GESCO.
+            |
             */
 
             return redirect()
                 ->route('contact')
-                ->withInput()
                 ->with(
-                    'error',
-                    'Impossible d’envoyer votre message pour le moment. Veuillez réessayer plus tard.'
+                    'success',
+                    'Votre message a bien été enregistré. Nous vous répondrons dans les meilleurs délais.'
                 );
         }
     }

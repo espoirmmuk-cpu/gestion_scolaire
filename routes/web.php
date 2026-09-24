@@ -1036,11 +1036,46 @@ Route::post(
 
 Route::resource('responsables', ResponsableController::class);
 
-Route::get('/contact', function () {
-    return view('contact');
-})->name('contact');
+    /*
+    |--------------------------------------------------------------------------
+    | CONTACT PUBLIC
+    |--------------------------------------------------------------------------
+    */
 
-Route::post('/contact', [ContactController::class, 'send'])
-    ->name('contact.send');
+    Route::get(
+        '/contact',
+        [ContactController::class, 'index']
+    )->name('contact');
+
+    Route::post(
+        '/contact',
+        [ContactController::class, 'send']
+    )->name('contact.send');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | MESSAGES DE CONTACT — ADMINISTRATION
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware(['auth'])->group(function () {
+
+        Route::get(
+            '/contacts',
+            [\App\Http\Controllers\ContactAdminController::class, 'index']
+        )->name('contacts.index');
+
+        Route::get(
+            '/contacts/{contact}',
+            [\App\Http\Controllers\ContactAdminController::class, 'show']
+        )->name('contacts.show');
+
+        Route::delete(
+            '/contacts/{contact}',
+            [\App\Http\Controllers\ContactAdminController::class, 'destroy']
+        )->name('contacts.destroy');
+
+    });
 
 require __DIR__.'/auth.php';

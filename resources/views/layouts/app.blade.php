@@ -1114,7 +1114,7 @@
 
         <main class="gesco-content">
 
-            {{ $slot }}
+           @yield('content')
 
         </main>
 
