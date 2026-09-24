@@ -438,6 +438,16 @@ Route::resource('personnel', PersonnelController::class)
         'personnel' => 'personnel',
     ]);
 
+Route::post(
+    'annees-scolaires/{id}/cloturer',
+    [AnneeScolaireController::class, 'cloturer']
+)->name('annees-scolaires.cloturer');
+
+Route::resource(
+    'annees-scolaires',
+    AnneeScolaireController::class
+);
+
 Route::resource('annees-scolaires', AnneeScolaireController::class
 );
     /*

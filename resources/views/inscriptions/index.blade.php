@@ -60,6 +60,252 @@
 
         @endif
 
+        {{-- ========================================================= --}}
+        {{-- FILTRES DES INSCRIPTIONS --}}
+        {{-- ========================================================= --}}
+
+        <div class="bg-white border-b border-gray-100">
+
+            <form
+                method="GET"
+                action="{{ route('inscriptions.index') }}"
+                class="p-6"
+            >
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+                    {{-- Classe --}}
+                    <div>
+
+                        <label
+                            for="id_classe"
+                            class="block text-sm font-semibold text-gray-700 mb-2"
+                        >
+                            Classe
+                        </label>
+
+                        <select
+                            name="id_classe"
+                            id="id_classe"
+                            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        >
+
+                            <option value="">
+                                Toutes les classes
+                            </option>
+
+                            @foreach($classes as $classe)
+
+                                <option
+                                    value="{{ $classe->id_classe }}"
+                                    {{ request('id_classe') == $classe->id_classe ? 'selected' : '' }}
+                                >
+                                    {{ $classe->libelle }}
+                                </option>
+
+                            @endforeach
+
+                        </select>
+
+                    </div>
+
+
+                    {{-- Sexe --}}
+                    <div>
+
+                        <label
+                            for="sexe"
+                            class="block text-sm font-semibold text-gray-700 mb-2"
+                        >
+                            Sexe
+                        </label>
+
+                        <select
+                            name="sexe"
+                            id="sexe"
+                            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        >
+
+                            <option value="">
+                                Tous
+                            </option>
+
+                            <option
+                                value="MASCULIN"
+                                {{ request('sexe') === 'MASCULIN' ? 'selected' : '' }}
+                            >
+                                Masculin
+                            </option>
+
+                            <option
+                                value="FEMININ"
+                                {{ request('sexe') === 'FEMININ' ? 'selected' : '' }}
+                            >
+                                Féminin
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    {{-- Année scolaire --}}
+                    <div>
+
+                        <label
+                            for="id_annee_scolaire"
+                            class="block text-sm font-semibold text-gray-700 mb-2"
+                        >
+                            Année scolaire
+                        </label>
+
+                        <select
+                            name="id_annee_scolaire"
+                            id="id_annee_scolaire"
+                            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        >
+
+                            <option value="">
+                                Toutes les années
+                            </option>
+
+                            @foreach($annees as $annee)
+
+                                <option
+                                    value="{{ $annee->id_annee_scolaire }}"
+                                    {{ request('id_annee_scolaire') == $annee->id_annee_scolaire ? 'selected' : '' }}
+                                >
+                                    {{ $annee->libelle }}
+                                </option>
+
+                            @endforeach
+
+                        </select>
+
+                    </div>
+
+
+                    {{-- Boutons --}}
+                    <div class="flex items-end gap-2">
+
+                        <button
+                            type="submit"
+                            class="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition"
+                        >
+
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 11.414V19l-6 3v-10.586L3.293 6.707A1 1 0 013 6V4z"
+                                />
+                            </svg>
+
+                            Filtrer
+
+                        </button>
+
+
+                        <a
+                            href="{{ route('inscriptions.index') }}"
+                            class="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition"
+                            title="Réinitialiser les filtres"
+                        >
+
+                            Réinitialiser
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                {{-- Résumé des filtres actifs --}}
+
+                @if(
+                    request()->filled('id_classe') ||
+                    request()->filled('sexe') ||
+                    request()->filled('id_annee_scolaire')
+                )
+
+                    <div class="mt-5 flex flex-wrap items-center gap-2">
+
+                        <span class="text-sm font-medium text-gray-500">
+                            Filtres actifs :
+                        </span>
+
+
+                        @if(request()->filled('id_classe'))
+
+                            @php
+                                $classeSelectionnee = $classes->firstWhere(
+                                    'id_classe',
+                                    request('id_classe')
+                                );
+                            @endphp
+
+                            @if($classeSelectionnee)
+
+                                <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                                    Classe :
+                                    {{ $classeSelectionnee->libelle }}
+                                </span>
+
+                            @endif
+
+                        @endif
+
+
+                        @if(request('sexe') === 'MASCULIN')
+
+                            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                                Sexe : Masculin
+                            </span>
+
+                        @elseif(request('sexe') === 'FEMININ')
+
+                            <span class="inline-flex items-center rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-700">
+                                Sexe : Féminin
+                            </span>
+
+                        @endif
+
+
+                        @if(request()->filled('id_annee_scolaire'))
+
+                            @php
+                                $anneeSelectionnee = $annees->firstWhere(
+                                    'id_annee_scolaire',
+                                    request('id_annee_scolaire')
+                                );
+                            @endphp
+
+                            @if($anneeSelectionnee)
+
+                                <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                                    Année :
+                                    {{ $anneeSelectionnee->libelle }}
+                                </span>
+
+                            @endif
+
+                        @endif
+
+                    </div>
+
+                @endif
+
+            </form>
+
+        </div>
 
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
 

@@ -166,69 +166,68 @@
                         </div>
                     {{-- Frais scolaires de l'élève --}}
 
-<div
-    id="frais-container"
-    class="md:col-span-2 hidden"
->
+                    <div
+                        id="frais-container"
+                        class="md:col-span-2 hidden"
+                    >
 
-```
-<h3 class="text-lg font-semibold text-gray-800 mb-4">
-    Frais scolaires à payer
-</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        Frais scolaires à payer
+                    </h3>
 
-<div class="overflow-x-auto border border-gray-200 rounded-lg">
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg">
 
-    <table class="min-w-full divide-y divide-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200">
 
-        <thead class="bg-gray-50">
+                            <thead class="bg-gray-50">
 
-            <tr>
+                                <tr>
 
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Payer
-                </th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Payer
+                                    </th>
 
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Frais
-                </th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Frais
+                                    </th>
 
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Montant
-                </th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                        Montant
+                                    </th>
 
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Déjà payé
-                </th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                        Déjà payé
+                                    </th>
 
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Solde
-                </th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                        Solde
+                                    </th>
 
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    À payer
-                </th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                        À payer
+                                    </th>
 
-            </tr>
+                                </tr>
 
-        </thead>
+                            </thead>
 
-        <tbody
-            id="frais-list"
-            class="bg-white divide-y divide-gray-200"
-        >
-        </tbody>
+                            <tbody
+                                id="frais-list"
+                                class="bg-white divide-y divide-gray-200"
+                            >
+                            </tbody>
 
-    </table>
+                        </table>
 
-</div>
+                    </div>
 
-<p
-    id="frais-message"
-    class="mt-3 text-sm text-gray-500"
-></p>
-```
+                    <p
+                        id="frais-message"
+                        class="mt-3 text-sm text-gray-500"
+                    ></p>
 
-</div>
+
+                    </div>
 
 
                         {{-- Numéro reçu --}}

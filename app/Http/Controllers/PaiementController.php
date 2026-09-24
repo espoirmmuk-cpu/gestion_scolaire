@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Paiement;
 use App\Models\Eleve;
+use App\Models\Classe;
 use App\Models\JournalActivite;
 use App\Models\FraisEleve;
 use App\Models\DetailPaiement;
@@ -12,33 +13,33 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-
 class PaiementController extends Controller
 {
-    /**
-     * Afficher la liste des paiements.
-     */
+
     public function index(Request $request)
     {
-                    $query = Paiement::with('eleve')
-                ->whereHas('eleve', function ($q) {
-                    $q->where(
-                        'id_etablissement',
-                        auth()->user()->id_etablissement
-                    );
-                });
+        $idEtablissement = auth()->user()->id_etablissement;
 
-        // Recherche
+        $query = Paiement::with([
+            'eleve',
+            'details.fraisEleve.inscription.classe',
+        ])
+            ->whereHas('eleve', function ($q) use ($idEtablissement) {
+                $q->where('id_etablissement', $idEtablissement);
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Recherche
+        |--------------------------------------------------------------------------
+        */
         if ($request->filled('search')) {
-
             $search = $request->search;
 
             $query->where(function ($q) use ($search) {
-
                 $q->where('numero_recu', 'like', "%{$search}%")
                     ->orWhere('reference', 'like', "%{$search}%")
                     ->orWhereHas('eleve', function ($eleve) use ($search) {
-
                         $eleve->where('matricule', 'like', "%{$search}%")
                             ->orWhere('nom', 'like', "%{$search}%")
                             ->orWhere('postnom', 'like', "%{$search}%")
@@ -47,17 +48,98 @@ class PaiementController extends Controller
             });
         }
 
-        // Filtre devise
+        /*
+        |--------------------------------------------------------------------------
+        | Filtre classe
+        |--------------------------------------------------------------------------
+        |
+        | Paiement
+        |    └── details
+        |          └── fraisEleve
+        |                └── inscription
+        |                      └── classe
+        |
+        */
+        if ($request->filled('id_classe')) {
+            $query->whereHas(
+                'details.fraisEleve.inscription',
+                function ($q) use ($request) {
+                    $q->where('id_classe', $request->id_classe);
+                }
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Situation financière
+        |--------------------------------------------------------------------------
+        |
+        | EN_ORDRE      = aucun frais avec un solde > 0
+        | RESTE_A_PAYER = au moins un frais avec un solde > 0
+        |
+        | On interroge directement frais_eleves car Eleve ne possède
+        | pas de relation fraisEleves().
+        |
+        */
+        if ($request->filled('situation')) {
+
+            if ($request->situation === 'EN_ORDRE') {
+
+                $query->whereHas('eleve', function ($q) {
+
+                    $q->whereNotExists(function ($subQuery) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('frais_eleves')
+                            ->whereColumn(
+                                'frais_eleves.id_eleve',
+                                'eleves.id_eleve'
+                            )
+                            ->where('frais_eleves.solde', '>', 0);
+                    });
+
+                });
+
+            } elseif ($request->situation === 'RESTE_A_PAYER') {
+
+                $query->whereHas('eleve', function ($q) {
+
+                    $q->whereExists(function ($subQuery) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('frais_eleves')
+                            ->whereColumn(
+                                'frais_eleves.id_eleve',
+                                'eleves.id_eleve'
+                            )
+                            ->where('frais_eleves.solde', '>', 0);
+                    });
+
+                });
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filtre devise
+        |--------------------------------------------------------------------------
+        */
         if ($request->filled('devise')) {
             $query->where('devise', $request->devise);
         }
 
-        // Filtre mode de paiement
+        /*
+        |--------------------------------------------------------------------------
+        | Filtre mode de paiement
+        |--------------------------------------------------------------------------
+        */
         if ($request->filled('mode_paiement')) {
             $query->where('mode_paiement', $request->mode_paiement);
         }
 
-        // Filtre date début
+        /*
+        |--------------------------------------------------------------------------
+        | Filtre date début
+        |--------------------------------------------------------------------------
+        */
         if ($request->filled('date_debut')) {
             $query->whereDate(
                 'date_paiement',
@@ -66,7 +148,11 @@ class PaiementController extends Controller
             );
         }
 
-        // Filtre date fin
+        /*
+        |--------------------------------------------------------------------------
+        | Filtre date fin
+        |--------------------------------------------------------------------------
+        */
         if ($request->filled('date_fin')) {
             $query->whereDate(
                 'date_paiement',
@@ -75,14 +161,31 @@ class PaiementController extends Controller
             );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Liste des paiements
+        |--------------------------------------------------------------------------
+        */
         $paiements = $query
             ->orderByDesc('date_paiement')
             ->paginate(10)
             ->withQueryString();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Liste des classes
+        |--------------------------------------------------------------------------
+        */
+        $classes = \App\Models\Classe::where(
+            'id_etablissement',
+            $idEtablissement
+        )
+            ->orderBy('libelle')
+            ->get();
+
         return view(
             'paiements.index',
-            compact('paiements')
+            compact('paiements', 'classes')
         );
     }
 
@@ -92,7 +195,10 @@ class PaiementController extends Controller
      */
     public function create()
     {
-        $eleves = Eleve::where('statut', 'ACTIF')
+        $eleves = Eleve::where(
+            'statut',
+            'ACTIF'
+        )
             ->where(
                 'id_etablissement',
                 auth()->user()->id_etablissement
@@ -119,10 +225,25 @@ class PaiementController extends Controller
             'inscription.classe',
             'inscription.anneeScolaire',
         ])
-            ->where('id_eleve', $id_eleve)
-            ->whereIn('statut', ['NON_PAYE', 'PARTIEL'])
-            ->where('solde', '>', 0)
-            ->orderBy('id_frais_eleve')
+            ->where(
+                'id_eleve',
+                $id_eleve
+            )
+            ->whereIn(
+                'statut',
+                [
+                    'NON_PAYE',
+                    'PARTIEL'
+                ]
+            )
+            ->where(
+                'solde',
+                '>',
+                0
+            )
+            ->orderBy(
+                'id_frais_eleve'
+            )
             ->get();
 
         return response()->json($frais);
@@ -202,22 +323,28 @@ class PaiementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Démarrer la transaction
+        | Vérifier l'élève
         |--------------------------------------------------------------------------
         */
-        $eleve = Eleve::where('id_eleve', $validated['id_eleve'])
-                ->where(
-                    'id_etablissement',
-                    auth()->user()->id_etablissement
-                )
-                ->first();
 
-            if (!$eleve) {
-                abort(
-                    403,
-                    'Cet élève n’appartient pas à votre établissement.'
-                );
-            }
+        $eleve = Eleve::where(
+            'id_eleve',
+            $validated['id_eleve']
+        )
+            ->where(
+                'id_etablissement',
+                auth()->user()->id_etablissement
+            )
+            ->first();
+
+        if (!$eleve) {
+
+            abort(
+                403,
+                'Cet élève n’appartient pas à votre établissement.'
+            );
+        }
+
 
         DB::beginTransaction();
 
@@ -232,23 +359,33 @@ class PaiementController extends Controller
             $fraisSelectionnes = FraisEleve::with([
                 'tarif',
             ])
-                ->where('id_eleve', $validated['id_eleve'])
+                ->where(
+                    'id_eleve',
+                    $validated['id_eleve']
+                )
                 ->whereIn(
                     'id_frais_eleve',
                     array_keys($validated['frais'])
                 )
                 ->whereIn(
                     'statut',
-                    ['NON_PAYE', 'PARTIEL']
+                    [
+                        'NON_PAYE',
+                        'PARTIEL'
+                    ]
                 )
-                ->where('solde', '>', 0)
+                ->where(
+                    'solde',
+                    '>',
+                    0
+                )
                 ->lockForUpdate()
                 ->get();
 
 
             /*
             |--------------------------------------------------------------------------
-            | Vérifier que tous les frais envoyés existent
+            | Vérifier les frais
             |--------------------------------------------------------------------------
             */
 
@@ -265,24 +402,24 @@ class PaiementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Calculer le total des détails
+            | Calcul des détails
             |--------------------------------------------------------------------------
             */
 
             $totalDetails = 0;
 
-
-            foreach ($fraisSelectionnes as $frais) {
+            foreach (
+                $fraisSelectionnes
+                as $frais
+            ) {
 
                 $montant = round(
-                    (float) $validated['frais'][$frais->id_frais_eleve],
+                    (float) $validated['frais'][
+                        $frais->id_frais_eleve
+                    ],
                     2
                 );
 
-
-                /*
-                | Vérifier le montant
-                */
 
                 if ($montant <= 0) {
 
@@ -292,11 +429,10 @@ class PaiementController extends Controller
                 }
 
 
-                /*
-                | Le montant ne peut pas dépasser le solde
-                */
-
-                if ($montant > (float) $frais->solde) {
+                if (
+                    $montant
+                    > (float) $frais->solde
+                ) {
 
                     throw new \Exception(
                         'Le montant payé pour le frais #'
@@ -326,11 +462,14 @@ class PaiementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Vérifier que total paiement = total détails
+            | Vérifier total
             |--------------------------------------------------------------------------
             */
 
-            if ($totalDetails !== $montantTotal) {
+            if (
+                $totalDetails
+                !== $montantTotal
+            ) {
 
                 throw new \Exception(
                     'Le montant total du paiement doit être égal à la somme des montants affectés aux frais.'
@@ -340,15 +479,20 @@ class PaiementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Vérifier la devise des tarifs
+            | Vérifier devise
             |--------------------------------------------------------------------------
             */
 
-            foreach ($fraisSelectionnes as $frais) {
+            foreach (
+                $fraisSelectionnes
+                as $frais
+            ) {
 
                 if (
                     $frais->tarif
-                    && $frais->tarif->devise !== $validated['devise']
+                    &&
+                    $frais->tarif->devise
+                    !== $validated['devise']
                 ) {
 
                     throw new \Exception(
@@ -360,65 +504,74 @@ class PaiementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Créer le paiement principal
+            | Créer le paiement
             |--------------------------------------------------------------------------
             */
 
             $paiement = Paiement::create([
 
-                'id_eleve' => $validated['id_eleve'],
+                'id_eleve' =>
+                    $validated['id_eleve'],
 
-                'numero_recu' => $validated['numero_recu'],
+                'numero_recu' =>
+                    $validated['numero_recu'],
 
-                'date_paiement' => $validated['date_paiement'],
+                'date_paiement' =>
+                    $validated['date_paiement'],
 
-                'montant_total' => $montantTotal,
+                'montant_total' =>
+                    $montantTotal,
 
-                'devise' => $validated['devise'],
+                'devise' =>
+                    $validated['devise'],
 
-                'mode_paiement' => $validated['mode_paiement'],
+                'mode_paiement' =>
+                    $validated['mode_paiement'],
 
-                'reference' => $validated['reference'] ?? null,
+                'reference' =>
+                    $validated['reference'] ?? null,
 
-                'id_utilisateur' => Auth::id(),
+                'id_utilisateur' =>
+                    Auth::id(),
 
-                'observation' => $validated['observation'] ?? null,
+                'observation' =>
+                    $validated['observation'] ?? null,
 
             ]);
 
 
             /*
             |--------------------------------------------------------------------------
-            | Créer les détails et mettre à jour les frais
+            | Détails + mise à jour des frais
             |--------------------------------------------------------------------------
             */
 
-            foreach ($fraisSelectionnes as $frais) {
+            foreach (
+                $fraisSelectionnes
+                as $frais
+            ) {
 
                 $montant = round(
-                    (float) $validated['frais'][$frais->id_frais_eleve],
+                    (float) $validated['frais'][
+                        $frais->id_frais_eleve
+                    ],
                     2
                 );
 
 
-                /*
-                | Créer le détail
-                */
-
                 DetailPaiement::create([
 
-                    'id_paiement' => $paiement->id_paiement,
+                    'id_paiement' =>
+                        $paiement->id_paiement,
 
-                    'id_frais_eleve' => $frais->id_frais_eleve,
+                    'id_frais_eleve' =>
+                        $frais->id_frais_eleve,
 
-                    'montant' => $montant,
+                    'montant' =>
+                        $montant,
 
                 ]);
 
-
-                /*
-                | Nouveau montant payé
-                */
 
                 $nouveauMontantPaye = round(
                     (float) $frais->montant_paye
@@ -427,10 +580,6 @@ class PaiementController extends Controller
                 );
 
 
-                /*
-                | Nouveau solde
-                */
-
                 $nouveauSolde = round(
                     (float) $frais->montant_a_payer
                     - $nouveauMontantPaye,
@@ -438,19 +587,11 @@ class PaiementController extends Controller
                 );
 
 
-                /*
-                | Éviter les petits écarts décimaux
-                */
-
                 if ($nouveauSolde < 0.01) {
 
                     $nouveauSolde = 0;
                 }
 
-
-                /*
-                | Déterminer le statut
-                */
 
                 if ($nouveauSolde <= 0) {
 
@@ -466,62 +607,82 @@ class PaiementController extends Controller
                 }
 
 
-                /*
-                | Mettre à jour le frais
-                */
-
                 $frais->update([
 
-                    'montant_paye' => $nouveauMontantPaye,
+                    'montant_paye' =>
+                        $nouveauMontantPaye,
 
-                    'solde' => $nouveauSolde,
+                    'solde' =>
+                        $nouveauSolde,
 
-                    'statut' => $statut,
+                    'statut' =>
+                        $statut,
 
                 ]);
             }
-                /*
-                |--------------------------------------------------------------------------
-                | CRÉER AUTOMATIQUEMENT LA RECETTE
-                |--------------------------------------------------------------------------
-                */
 
-                $fraisPrincipal = $fraisSelectionnes->first();
 
-                $idAnneeScolaire = null;
+            /*
+            |--------------------------------------------------------------------------
+            | Créer automatiquement la recette
+            |--------------------------------------------------------------------------
+            */
 
-                if ($fraisPrincipal && $fraisPrincipal->tarif) {
+            $fraisPrincipal =
+                $fraisSelectionnes->first();
 
-                    $idAnneeScolaire = $fraisPrincipal->tarif->id_annee_scolaire;
-                }
+            $idAnneeScolaire = null;
 
-                Recette::create([
+            if (
+                $fraisPrincipal
+                &&
+                $fraisPrincipal->tarif
+            ) {
 
-                    'id_paiement' => $paiement->id_paiement,
+                $idAnneeScolaire =
+                    $fraisPrincipal
+                        ->tarif
+                        ->id_annee_scolaire;
+            }
 
-                    'id_etablissement' => $eleve->id_etablissement,
 
-                    'id_annee_scolaire' => $idAnneeScolaire,
+            Recette::create([
 
-                    'date_recette' => $validated['date_paiement'],
+                'id_paiement' =>
+                    $paiement->id_paiement,
 
-                    'source' => 'Paiement élève - Reçu ' . $paiement->numero_recu,
+                'id_etablissement' =>
+                    $eleve->id_etablissement,
 
-                    'montant' => $montantTotal,
+                'id_annee_scolaire' =>
+                    $idAnneeScolaire,
 
-                    'devise' => $validated['devise'],
+                'date_recette' =>
+                    $validated['date_paiement'],
 
-                    'description' =>
-                        'Paiement de l’élève '
-                        . trim(
-                            $eleve->nom . ' '
-                            . $eleve->postnom . ' '
-                            . $eleve->prenom
-                        ),
+                'source' =>
+                    'Paiement élève - Reçu '
+                    . $paiement->numero_recu,
 
-                    'id_utilisateur' => Auth::id(),
+                'montant' =>
+                    $montantTotal,
 
-                ]);
+                'devise' =>
+                    $validated['devise'],
+
+                'description' =>
+                    'Paiement de l’élève '
+                    . trim(
+                        $eleve->nom . ' '
+                        . $eleve->postnom . ' '
+                        . $eleve->prenom
+                    ),
+
+                'id_utilisateur' =>
+                    Auth::id(),
+
+            ]);
+
 
             /*
             |--------------------------------------------------------------------------
@@ -531,48 +692,50 @@ class PaiementController extends Controller
 
             JournalActivite::create([
 
-                'id_utilisateur' => Auth::id(),
+                'id_utilisateur' =>
+                    Auth::id(),
 
-                'action' => 'Ajout d’un paiement',
+                'action' =>
+                    'Ajout d’un paiement',
 
-                'table_concernee' => 'paiements',
+                'table_concernee' =>
+                    'paiements',
 
                 'id_enregistrement' =>
                     $paiement->id_paiement,
 
-                'anciennes_valeurs' => null,
+                'anciennes_valeurs' =>
+                    null,
 
-                'nouvelles_valeurs' => json_encode(
-                    $paiement
-                        ->fresh()
-                        ->load('details')
-                        ->toArray(),
-                    JSON_UNESCAPED_UNICODE
-                ),
+                'nouvelles_valeurs' =>
+                    json_encode(
+                        $paiement
+                            ->fresh()
+                            ->load('details')
+                            ->toArray(),
+                        JSON_UNESCAPED_UNICODE
+                    ),
 
-                'adresse_ip' => $request->ip(),
+                'adresse_ip' =>
+                    $request->ip(),
 
-                'navigateur' => $request->userAgent(),
+                'navigateur' =>
+                    $request->userAgent(),
 
-                'date_heure' => now(),
+                'date_heure' =>
+                    now(),
 
             ]);
 
 
             /*
             |--------------------------------------------------------------------------
-            | Valider la transaction
+            | Valider transaction
             |--------------------------------------------------------------------------
             */
 
             DB::commit();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Redirection
-            |--------------------------------------------------------------------------
-            */
 
             return redirect()
                 ->route(
@@ -587,42 +750,36 @@ class PaiementController extends Controller
 
         } catch (\Throwable $e) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Annuler la transaction
-            |--------------------------------------------------------------------------
-            */
-
             DB::rollBack();
-
 
             return back()
                 ->withInput()
                 ->withErrors([
-                    'paiement' => $e->getMessage(),
+                    'paiement' =>
+                        $e->getMessage(),
                 ]);
         }
     }
 
 
- /**
- * Afficher un paiement.
- */
-public function show(Paiement $paiement)
-{
-    $paiement->load([
-        'eleve',
-        'utilisateur.etablissement',
-        'details.fraisEleve.tarif.classe',
-        'details.fraisEleve.tarif.anneeScolaire',
-        'details.fraisEleve.tarif.categorieFrais',
-    ]);
+    /**
+     * Afficher un paiement.
+     */
+    public function show(Paiement $paiement)
+    {
+        $paiement->load([
+            'eleve',
+            'utilisateur.etablissement',
+            'details.fraisEleve.tarif.classe',
+            'details.fraisEleve.tarif.anneeScolaire',
+            'details.fraisEleve.tarif.categorieFrais',
+        ]);
 
-    return view(
-        'paiements.show',
-        compact('paiement')
-    );
-}
+        return view(
+            'paiements.show',
+            compact('paiement')
+        );
+    }
 
 
     /**
@@ -630,7 +787,11 @@ public function show(Paiement $paiement)
      */
     public function edit(Paiement $paiement)
     {
-        $eleves = Eleve::orderBy('nom')
+        $eleves = Eleve::where(
+            'id_etablissement',
+            auth()->user()->id_etablissement
+        )
+            ->orderBy('nom')
             ->orderBy('postnom')
             ->orderBy('prenom')
             ->get();
@@ -703,40 +864,51 @@ public function show(Paiement $paiement)
         ]);
 
 
-        $anciennesValeurs = $paiement->toArray();
+        $anciennesValeurs =
+            $paiement->toArray();
 
 
-        $paiement->update($validated);
+        $paiement->update(
+            $validated
+        );
 
 
         JournalActivite::create([
 
-            'id_utilisateur' => Auth::id(),
+            'id_utilisateur' =>
+                Auth::id(),
 
-            'action' => 'Modification d’un paiement',
+            'action' =>
+                'Modification d’un paiement',
 
-            'table_concernee' => 'paiements',
+            'table_concernee' =>
+                'paiements',
 
             'id_enregistrement' =>
                 $paiement->id_paiement,
 
-            'anciennes_valeurs' => json_encode(
-                $anciennesValeurs,
-                JSON_UNESCAPED_UNICODE
-            ),
+            'anciennes_valeurs' =>
+                json_encode(
+                    $anciennesValeurs,
+                    JSON_UNESCAPED_UNICODE
+                ),
 
-            'nouvelles_valeurs' => json_encode(
-                $paiement
-                    ->fresh()
-                    ->toArray(),
-                JSON_UNESCAPED_UNICODE
-            ),
+            'nouvelles_valeurs' =>
+                json_encode(
+                    $paiement
+                        ->fresh()
+                        ->toArray(),
+                    JSON_UNESCAPED_UNICODE
+                ),
 
-            'adresse_ip' => $request->ip(),
+            'adresse_ip' =>
+                $request->ip(),
 
-            'navigateur' => $request->userAgent(),
+            'navigateur' =>
+                $request->userAgent(),
 
-            'date_heure' => now(),
+            'date_heure' =>
+                now(),
 
         ]);
 
@@ -758,9 +930,11 @@ public function show(Paiement $paiement)
         Paiement $paiement
     ) {
 
-        $anciennesValeurs = $paiement->toArray();
+        $anciennesValeurs =
+            $paiement->toArray();
 
-        $idPaiement = $paiement->id_paiement;
+        $idPaiement =
+            $paiement->id_paiement;
 
 
         $paiement->delete();
@@ -768,26 +942,35 @@ public function show(Paiement $paiement)
 
         JournalActivite::create([
 
-            'id_utilisateur' => Auth::id(),
+            'id_utilisateur' =>
+                Auth::id(),
 
-            'action' => 'Suppression d’un paiement',
+            'action' =>
+                'Suppression d’un paiement',
 
-            'table_concernee' => 'paiements',
+            'table_concernee' =>
+                'paiements',
 
-            'id_enregistrement' => $idPaiement,
+            'id_enregistrement' =>
+                $idPaiement,
 
-            'anciennes_valeurs' => json_encode(
-                $anciennesValeurs,
-                JSON_UNESCAPED_UNICODE
-            ),
+            'anciennes_valeurs' =>
+                json_encode(
+                    $anciennesValeurs,
+                    JSON_UNESCAPED_UNICODE
+                ),
 
-            'nouvelles_valeurs' => null,
+            'nouvelles_valeurs' =>
+                null,
 
-            'adresse_ip' => $request->ip(),
+            'adresse_ip' =>
+                $request->ip(),
 
-            'navigateur' => $request->userAgent(),
+            'navigateur' =>
+                $request->userAgent(),
 
-            'date_heure' => now(),
+            'date_heure' =>
+                now(),
 
         ]);
 

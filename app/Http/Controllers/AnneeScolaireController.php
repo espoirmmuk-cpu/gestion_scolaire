@@ -10,8 +10,7 @@ class AnneeScolaireController extends Controller
     /**
      * Retourne l'identifiant de l'établissement courant.
      *
-     * Un administrateur global sans établissement
-     * possède un accès global.
+     * NULL = administrateur global / Super Administrateur.
      */
     private function etablissementCourant()
     {
@@ -53,6 +52,21 @@ class AnneeScolaireController extends Controller
             abort(
                 403,
                 'Vous n’avez pas accès à cette année scolaire.'
+            );
+        }
+    }
+
+
+    /**
+     * Vérifie qu'une année n'est pas clôturée.
+     */
+    private function verifierNonCloturee($annee)
+    {
+        if ((int) ($annee->est_cloturee ?? 0) === 1) {
+
+            abort(
+                403,
+                'Cette année scolaire est clôturée. Elle ne peut plus être modifiée.'
             );
         }
     }
@@ -252,6 +266,7 @@ class AnneeScolaireController extends Controller
             'date_debut' => $validated['date_debut'],
             'date_fin' => $validated['date_fin'],
             'est_active' => $estActive,
+            'est_cloturee' => 0,
             'date_creation' => now(),
         ]);
 
@@ -321,6 +336,14 @@ class AnneeScolaireController extends Controller
 
         $this->verifierEtablissement($annee);
 
+        /*
+        |--------------------------------------------------------------------------
+        | UNE ANNÉE CLÔTURÉE NE PEUT PAS ÊTRE MODIFIÉE
+        |--------------------------------------------------------------------------
+        */
+
+        $this->verifierNonCloturee($annee);
+
 
         return view(
             'annees_scolaires.edit',
@@ -352,6 +375,14 @@ class AnneeScolaireController extends Controller
 
 
         $this->verifierEtablissement($annee);
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROTECTION ANNÉE CLÔTURÉE
+        |--------------------------------------------------------------------------
+        */
+
+        $this->verifierNonCloturee($annee);
 
 
         /*
@@ -481,6 +512,99 @@ class AnneeScolaireController extends Controller
 
 
     /**
+     * Clôture d'une année scolaire.
+     */
+    public function cloturer($id)
+    {
+        $annee = DB::table('annees_scolaires')
+            ->where(
+                'id_annee_scolaire',
+                $id
+            )
+            ->first();
+
+
+        if (!$annee) {
+
+            abort(
+                404,
+                'Année scolaire introuvable.'
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VÉRIFICATION ÉTABLISSEMENT
+        |--------------------------------------------------------------------------
+        */
+
+        $this->verifierEtablissement($annee);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VÉRIFICATION SI DÉJÀ CLÔTURÉE
+        |--------------------------------------------------------------------------
+        */
+
+        if ((int) ($annee->est_cloturee ?? 0) === 1) {
+
+            return back()
+                ->with(
+                    'error',
+                    'Cette année scolaire est déjà clôturée.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SEULE UNE ANNÉE ACTIVE PEUT ÊTRE CLÔTURÉE
+        |--------------------------------------------------------------------------
+        */
+
+        if ((int) $annee->est_active !== 1) {
+
+            return back()
+                ->with(
+                    'error',
+                    'Seule l’année scolaire active peut être clôturée.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLÔTURE
+        |--------------------------------------------------------------------------
+        */
+
+        DB::table('annees_scolaires')
+            ->where(
+                'id_annee_scolaire',
+                $annee->id_annee_scolaire
+            )
+            ->update([
+                'est_active' => 0,
+                'est_cloturee' => 1,
+                'date_cloture' => now(),
+                'cloturee_par' => auth()->user()->id_utilisateur,
+            ]);
+
+
+        return redirect()
+            ->route('annees-scolaires.index')
+            ->with(
+                'success',
+                'L’année scolaire « ' .
+                $annee->libelle .
+                ' » a été clôturée avec succès.'
+            );
+    }
+
+
+    /**
      * Suppression.
      */
     public function destroy($id)
@@ -507,6 +631,22 @@ class AnneeScolaireController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | PROTECTION ANNÉE CLÔTURÉE
+        |--------------------------------------------------------------------------
+        */
+
+        if ((int) ($annee->est_cloturee ?? 0) === 1) {
+
+            return back()
+                ->with(
+                    'error',
+                    'Impossible de supprimer une année scolaire clôturée.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
         | PROTECTION DE L'ANNÉE ACTIVE
         |--------------------------------------------------------------------------
         */
@@ -525,10 +665,6 @@ class AnneeScolaireController extends Controller
         |--------------------------------------------------------------------------
         | VÉRIFICATION DES DONNÉES ASSOCIÉES
         |--------------------------------------------------------------------------
-        |
-        | On empêche ici une suppression qui pourrait casser
-        | les données scolaires liées à cette année.
-        |
         */
 
         $inscriptions = DB::table('inscriptions')

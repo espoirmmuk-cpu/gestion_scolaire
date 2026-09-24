@@ -8,7 +8,7 @@
             <div class="text-center mb-4">
 
                 <!-- Logo -->
-                <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-indigo-600 shadow-lg">
+                <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-blue-600 shadow-lg">
                     <svg
                             xmlns="http://www.w3.org/2000/svg"
                             class="h-10 w-7"

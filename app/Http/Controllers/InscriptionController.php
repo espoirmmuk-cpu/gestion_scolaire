@@ -42,13 +42,49 @@ class InscriptionController extends Controller
         return $user->id_etablissement;
     }
 
-
     /**
-     * Liste des inscriptions.
+     * Liste des inscriptions avec filtres.
      */
-    public function index()
+    public function index(Request $request)
     {
         $idEtablissement = $this->getEtablissementId();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Classes disponibles pour le filtre
+        |--------------------------------------------------------------------------
+        */
+
+        $classesQuery = Classe::query();
+
+        if ($idEtablissement !== null) {
+            $classesQuery->where(
+                'id_etablissement',
+                $idEtablissement
+            );
+        }
+
+        $classes = $classesQuery
+            ->orderBy('libelle')
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Années scolaires disponibles
+        |--------------------------------------------------------------------------
+        */
+
+        $annees = AnneeScolaire::orderByDesc(
+            'id_annee_scolaire'
+        )->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Requête des inscriptions
+        |--------------------------------------------------------------------------
+        */
 
         $query = Inscription::with([
             'eleve',
@@ -56,6 +92,7 @@ class InscriptionController extends Controller
             'anneeScolaire',
             'fraisEleves',
         ]);
+
 
         /*
         |--------------------------------------------------------------------------
@@ -75,13 +112,80 @@ class InscriptionController extends Controller
             });
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filtre par classe
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('id_classe')) {
+
+            $query->where(
+                'id_classe',
+                $request->id_classe
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filtre par année scolaire
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('id_annee_scolaire')) {
+
+            $query->where(
+                'id_annee_scolaire',
+                $request->id_annee_scolaire
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filtre par sexe
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $request->filled('sexe') &&
+            in_array(
+                $request->sexe,
+                ['MASCULIN', 'FEMININ']
+            )
+        ) {
+
+            $query->whereHas('eleve', function ($q) use ($request) {
+
+                $q->where(
+                    'sexe',
+                    $request->sexe
+                );
+
+            });
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Récupération
+        |--------------------------------------------------------------------------
+        */
+
         $inscriptions = $query
             ->orderByDesc('id_inscription')
             ->get();
 
+
         return view(
             'inscriptions.index',
-            compact('inscriptions')
+            compact(
+                'inscriptions',
+                'classes',
+                'annees'
+            )
         );
     }
 
