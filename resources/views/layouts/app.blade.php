@@ -1113,9 +1113,11 @@
         {{-- CONTENU DE LA PAGE --}}
 
         <main class="gesco-content">
+            @yield('content')
 
-           @yield('content')
-
+            @isset($slot)
+                {{ $slot }}
+            @endisset
         </main>
 
     </div>
