@@ -225,6 +225,11 @@ class PresenceController extends Controller
 
         $classes = $classesQuery->get();
 
+        \Log::info('PRESENCES PERFORMANCE', [
+            'presences_total' => $presences->total(),
+            'eleves_count' => $eleves->count(),
+            'classes_count' => $classes->count(),
+        ]);
 
         return view(
             'presences.index',
