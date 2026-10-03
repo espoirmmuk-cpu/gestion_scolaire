@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Etablissement;
+use App\Services\Sync\RelationSyncService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -20,8 +22,8 @@ class UserController extends Controller
             'etablissement',
             'roles',
         ])
-        ->orderBy('nom')
-        ->get();
+            ->orderBy('nom')
+            ->get();
 
         return view('utilisateurs.index', compact('utilisateurs'));
     }
@@ -32,7 +34,6 @@ class UserController extends Controller
     public function create()
     {
         $etablissements = Etablissement::orderBy('nom')->get();
-
         $roles = Role::orderBy('nom')->get();
 
         return view('utilisateurs.create', compact(
@@ -98,9 +99,23 @@ class UserController extends Controller
         /*
          * Attribution du rôle.
          */
+        $roleId = (int) $validated['id_role'];
+
         $utilisateur->roles()->sync([
-            $validated['id_role'],
+            $roleId,
         ]);
+
+        /*
+         * Synchronisation de la relation utilisateur ↔ rôle.
+         */
+        app(RelationSyncService::class)->recordRelationOperation(
+            'utilisateurs_roles',
+            [
+                'id_utilisateur' => $utilisateur->id_utilisateur,
+                'id_role' => $roleId,
+            ],
+            'create'
+        );
 
         return redirect()
             ->route('utilisateurs.index')
@@ -128,7 +143,6 @@ class UserController extends Controller
         $utilisateur->load('roles');
 
         $etablissements = Etablissement::orderBy('nom')->get();
-
         $roles = Role::orderBy('nom')->get();
 
         return view('utilisateurs.edit', compact(
@@ -188,6 +202,19 @@ class UserController extends Controller
             ],
         ]);
 
+        /*
+         * Capturer les rôles actuels AVANT la modification.
+         */
+        $anciensRoles = $utilisateur->roles()
+            ->pluck('id_role')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $nouveauRole = (int) $validated['id_role'];
+
+        /*
+         * Modifier les informations de l'utilisateur.
+         */
         $utilisateur->nom = $validated['nom'];
         $utilisateur->email = $validated['email'];
         $utilisateur->id_etablissement =
@@ -195,7 +222,7 @@ class UserController extends Controller
         $utilisateur->statut = $validated['statut'];
 
         /*
-         * Changer le mot de passe uniquement
+         * Modifier le mot de passe uniquement
          * lorsqu'un nouveau mot de passe est fourni.
          */
         if (!empty($validated['mot_de_passe'])) {
@@ -205,12 +232,49 @@ class UserController extends Controller
 
         $utilisateur->save();
 
+        $relationSync = app(RelationSyncService::class);
+
+        /*
+         * Si le rôle change, enregistrer la suppression
+         * de l'ancienne relation AVANT le sync().
+         */
+        foreach ($anciensRoles as $ancienRole) {
+            if ($ancienRole !== $nouveauRole) {
+                $relation = DB::table('utilisateurs_roles')
+                    ->where('id_utilisateur', $utilisateur->id_utilisateur)
+                    ->where('id_role', $ancienRole)
+                    ->first();
+
+                if ($relation) {
+                    $relationSync->recordRelationDelete(
+                        'utilisateurs_roles',
+                        (array) $relation
+                    );
+                }
+            }
+        }
+
         /*
          * Remplacer le rôle.
          */
         $utilisateur->roles()->sync([
-            $validated['id_role'],
+            $nouveauRole,
         ]);
+
+        /*
+         * Si le nouveau rôle n'existait pas déjà,
+         * enregistrer la création de la nouvelle relation.
+         */
+        if (!in_array($nouveauRole, $anciensRoles, true)) {
+            $relationSync->recordRelationOperation(
+                'utilisateurs_roles',
+                [
+                    'id_utilisateur' => $utilisateur->id_utilisateur,
+                    'id_role' => $nouveauRole,
+                ],
+                'create'
+            );
+        }
 
         return redirect()
             ->route('utilisateurs.index')
@@ -232,7 +296,30 @@ class UserController extends Controller
         ) {
             return redirect()
                 ->route('utilisateurs.index')
-                ->with('error', 'Vous ne pouvez pas supprimer votre propre compte.');
+                ->with(
+                    'error',
+                    'Vous ne pouvez pas supprimer votre propre compte.'
+                );
+        }
+
+        $relationSync = app(RelationSyncService::class);
+
+        /*
+         * Capturer les relations AVANT detach().
+         *
+         * C'est indispensable car après detach(),
+         * les lignes n'existent plus et nous ne pouvons
+         * plus récupérer leur uuid_sync.
+         */
+        $relations = DB::table('utilisateurs_roles')
+            ->where('id_utilisateur', $utilisateur->id_utilisateur)
+            ->get();
+
+        foreach ($relations as $relation) {
+            $relationSync->recordRelationDelete(
+                'utilisateurs_roles',
+                (array) $relation
+            );
         }
 
         /*
@@ -240,10 +327,19 @@ class UserController extends Controller
          */
         $utilisateur->roles()->detach();
 
+        /*
+         * Supprimer l'utilisateur.
+         *
+         * Le trait Syncable générera également
+         * l'opération DELETE de l'utilisateur.
+         */
         $utilisateur->delete();
 
         return redirect()
             ->route('utilisateurs.index')
-            ->with('success', 'Utilisateur supprimé avec succès.');
+            ->with(
+                'success',
+                'Utilisateur supprimé avec succès.'
+            );
     }
 }

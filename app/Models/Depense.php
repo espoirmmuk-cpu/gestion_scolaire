@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Syncable;
 
 class Depense extends Model
 {
+    use Syncable;
+    
     protected $table = 'depenses';
 
     protected $primaryKey = 'id_depense';

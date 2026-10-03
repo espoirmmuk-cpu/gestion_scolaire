@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Syncable;
 use Illuminate\Database\Eloquent\Model;
 
 class Niveau extends Model
 {
+    use Syncable;
+
     protected $table = 'niveaux';
 
     protected $primaryKey = 'id_niveau';

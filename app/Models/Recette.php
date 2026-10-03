@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Paiement;
+use App\Traits\Syncable;
 
 class Recette extends Model
 {
+    use Syncable;
+    
     protected $table = 'recettes';
 
     protected $primaryKey = 'id_recette';

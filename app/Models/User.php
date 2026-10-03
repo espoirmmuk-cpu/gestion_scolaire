@@ -4,12 +4,17 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Traits\Syncable;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use Notifiable, Syncable;
 
     protected $table = 'utilisateurs';
+
+    protected $syncHidden = [
+        'mot_de_passe',
+    ];
 
     protected $primaryKey = 'id_utilisateur';
 

@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Syncable;
 
 class TarifScolaire extends Model
 {
+    use Syncable;
+    
     protected $table = 'tarifs_scolaires';
 
     protected $primaryKey = 'id_tarif';

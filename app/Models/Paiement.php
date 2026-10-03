@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Eleve;
 use App\Models\User;
 use App\Models\DetailPaiement;
+use App\Traits\Syncable;
 
 class Paiement extends Model
 {
+    use Syncable;
+    
     protected $table = 'paiements';
 
     protected $primaryKey = 'id_paiement';

@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Etablissement;
 use App\Models\AnneeScolaire;
 use App\Models\Niveau;
+use App\Traits\Syncable;
 
 class Classe extends Model
 {
+    use Syncable;
+    
     protected $table = 'classes';
 
     protected $primaryKey = 'id_classe';

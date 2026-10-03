@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Syncable;
 
 class Matiere extends Model
 {
+    use Syncable;
+    
     protected $table = 'matieres';
 
     protected $primaryKey = 'id_matiere';

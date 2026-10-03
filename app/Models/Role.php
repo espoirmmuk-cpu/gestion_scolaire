@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Syncable;
 use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model
 {
+    use Syncable;
+
     protected $table = 'roles';
 
     protected $primaryKey = 'id_role';

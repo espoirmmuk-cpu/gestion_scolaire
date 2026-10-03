@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\TarifScolaire;
 use App\Models\FraisEleve;
+use App\Traits\Syncable;
 
 class Inscription extends Model
 {
+    use Syncable;
+    
     protected $table = 'inscriptions';
 
     protected $primaryKey = 'id_inscription';

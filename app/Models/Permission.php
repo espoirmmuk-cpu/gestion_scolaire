@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Syncable;
 use Illuminate\Database\Eloquent\Model;
 
 class Permission extends Model
 {
+    use Syncable;
+
     protected $table = 'permissions';
 
     protected $primaryKey = 'id_permission';
@@ -17,6 +20,8 @@ class Permission extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'module',
+        'action',
         'nom',
         'description',
     ];

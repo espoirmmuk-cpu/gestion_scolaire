@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Syncable;
 
 class JournalActivite extends Model
 {
+    use Syncable;
+
     protected $table = 'journaux_activites';
 
     protected $primaryKey = 'id_journal';

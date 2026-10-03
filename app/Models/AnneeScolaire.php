@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Syncable;
 
 class AnneeScolaire extends Model
 {
+    use Syncable;
+    
     /**
      * Table associée au modèle.
      */
