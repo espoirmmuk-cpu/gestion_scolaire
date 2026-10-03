@@ -146,7 +146,7 @@ class SyncController extends Controller
         ]);
 
         try {
-            
+
         $cloudConnection = DB::connection('gesco_cloud');
 
             $results = [];
@@ -211,6 +211,27 @@ class SyncController extends Controller
                     ], 409);
                 }
 
+                if (empty($cloud->uuid_sync)) {
+                    $cloudConnection
+                        ->table('etablissements')
+                        ->where('id_etablissement', $cloud->id_etablissement)
+                        ->update([
+                            'uuid_sync' => $local['uuid_sync'],
+                        ]);
+
+                    $cloud->uuid_sync = $local['uuid_sync'];
+
+                    $results[] = [
+                        'code' => $local['code'],
+                        'action' => 'adopted_local_uuid',
+                        'local_uuid' => $local['uuid_sync'],
+                        'cloud_uuid' => $cloud->uuid_sync,
+                        'cloud_id_etablissement' => $cloud->id_etablissement,
+                    ];
+
+                    continue;
+                }
+
                 $results[] = [
                     'code' => $local['code'],
                     'action' => $local['uuid_sync'] === $cloud->uuid_sync
@@ -218,6 +239,7 @@ class SyncController extends Controller
                         : 'use_cloud_uuid',
                     'local_uuid' => $local['uuid_sync'],
                     'cloud_uuid' => $cloud->uuid_sync,
+                    'cloud_id_etablissement' => $cloud->id_etablissement,
                 ];
             }
 
