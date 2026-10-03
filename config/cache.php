@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use Illuminate\Support\Str;
 
@@ -131,10 +131,6 @@ return [
     |
     */
 
-    'serializable_classes' => [
-        \App\Models\Eleve::class,
-        \App\Models\Classe::class,
-    ],
+    'serializable_classes' => false,
 
 ];
-
