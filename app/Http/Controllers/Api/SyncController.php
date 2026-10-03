@@ -145,115 +145,99 @@ class SyncController extends Controller
             ],
         ]);
 
+        try {
+            
         $cloudConnection = DB::connection('gesco_cloud');
 
-        $results = [];
+            $results = [];
 
-        foreach ($validated['establishments'] as $local) {
+            foreach ($validated['establishments'] as $local) {
 
-            /*
-            * Sécurité supplémentaire :
-            * un UUID déjà utilisé dans le Cloud ne doit pas
-            * être attribué à un autre établissement.
-            */
-            $cloudByUuid = $cloudConnection
-                ->table('etablissements')
-                ->where('uuid_sync', $local['uuid_sync'])
-                ->first();
-
-            /*
-            * Recherche principale par code.
-            */
-            $cloud = $cloudConnection
-                ->table('etablissements')
-                ->where('code', $local['code'])
-                ->first();
-
-            /*
-            * UUID déjà présent mais associé à un autre code :
-            * conflit d'identité.
-            */
-            if ($cloudByUuid && $cloudByUuid->code !== $local['code']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => sprintf(
-                        'Conflit UUID pour l’établissement %s : '
-                        . 'l’UUID %s est déjà associé au code %s dans le Cloud.',
-                        $local['code'],
-                        $local['uuid_sync'],
-                        $cloudByUuid->code
-                    ),
-                ], 409);
-            }
-
-            /*
-            * L'établissement n'existe pas encore dans le Cloud.
-            *
-            * On le crée avec l'UUID du Local.
-            * Le Cloud génère son propre id_etablissement.
-            */
-            if (!$cloud) {
-
-                $data = $local;
-
-                unset($data['id_etablissement']);
-
-                /*
-                * L'UUID du Local devient l'identité globale.
-                */
-                $data['uuid_sync'] = $local['uuid_sync'];
-
-                $cloudId = $cloudConnection
+                $cloudByUuid = $cloudConnection
                     ->table('etablissements')
-                    ->insertGetId($data);
+                    ->where('uuid_sync', $local['uuid_sync'])
+                    ->first();
+
+                $cloud = $cloudConnection
+                    ->table('etablissements')
+                    ->where('code', $local['code'])
+                    ->first();
+
+                if ($cloudByUuid && $cloudByUuid->code !== $local['code']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => sprintf(
+                            'Conflit UUID pour l’établissement %s : '
+                            . 'l’UUID %s est déjà associé au code %s dans le Cloud.',
+                            $local['code'],
+                            $local['uuid_sync'],
+                            $cloudByUuid->code
+                        ),
+                    ], 409);
+                }
+
+                if (!$cloud) {
+
+                    $data = $local;
+
+                    unset($data['id_etablissement']);
+
+                    $data['uuid_sync'] = $local['uuid_sync'];
+
+                    $cloudId = $cloudConnection
+                        ->table('etablissements')
+                        ->insertGetId($data);
+
+                    $results[] = [
+                        'code' => $local['code'],
+                        'action' => 'created_cloud',
+                        'local_uuid' => $local['uuid_sync'],
+                        'cloud_uuid' => $local['uuid_sync'],
+                        'cloud_id_etablissement' => $cloudId,
+                    ];
+
+                    continue;
+                }
+
+                if ($cloud->nom !== $local['nom']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => sprintf(
+                            'Conflit pour l’établissement %s : Local="%s", Cloud="%s".',
+                            $local['code'],
+                            $local['nom'],
+                            $cloud->nom
+                        ),
+                    ], 409);
+                }
 
                 $results[] = [
                     'code' => $local['code'],
-                    'action' => 'created_cloud',
+                    'action' => $local['uuid_sync'] === $cloud->uuid_sync
+                        ? 'already_harmonized'
+                        : 'use_cloud_uuid',
                     'local_uuid' => $local['uuid_sync'],
-                    'cloud_uuid' => $local['uuid_sync'],
-                    'cloud_id_etablissement' => $cloudId,
+                    'cloud_uuid' => $cloud->uuid_sync,
                 ];
-
-                continue;
             }
 
-            /*
-            * Le code existe déjà mais le nom est différent :
-            * rapprochement automatique interdit.
-            */
-            if ($cloud->nom !== $local['nom']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => sprintf(
-                        'Conflit pour l’établissement %s : Local="%s", Cloud="%s".',
-                        $local['code'],
-                        $local['nom'],
-                        $cloud->nom
-                    ),
-                ], 409);
-            }
+            return response()->json([
+                'success' => true,
+                'device' => $validated['device'],
+                'establishments' => $results,
+            ]);
 
-            /*
-            * Même établissement logique.
-            *
-            * Le UUID Cloud reste l'identité globale officielle.
-            */
-            $results[] = [
-                'code' => $local['code'],
-                'action' => $local['uuid_sync'] === $cloud->uuid_sync
-                    ? 'already_harmonized'
-                    : 'use_cloud_uuid',
-                'local_uuid' => $local['uuid_sync'],
-                'cloud_uuid' => $cloud->uuid_sync,
-            ];
+        } catch (Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Exception pendant le bootstrap Cloud.',
+                'exception' => get_class($e),
+                'error' => $e->getMessage(),
+                'file' => basename($e->getFile()),
+                'line' => $e->getLine(),
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'device' => $validated['device'],
-            'establishments' => $results,
-        ]);
     }
 
     public function push(
