@@ -206,7 +206,7 @@ class UserController extends Controller
          * Capturer les rôles actuels AVANT la modification.
          */
         $anciensRoles = $utilisateur->roles()
-            ->pluck('id_role')
+            ->pluck('roles.id_role')
             ->map(fn ($id) => (int) $id)
             ->all();
 
