@@ -682,7 +682,7 @@ class PresenceController extends Controller
             ->route('presences.index')
             ->with(
                 'success',
-                'Les prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sences de la classe ont ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© enregistrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es avec succÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s.'
+                'Les présences de la classe ont été enregistrées avec succès.'
             );
     }
 
