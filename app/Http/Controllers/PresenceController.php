@@ -9,6 +9,7 @@ use App\Models\JournalActivite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Cache;
 
 class PresenceController extends Controller
 {
@@ -16,7 +17,7 @@ class PresenceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Vérifier si l'utilisateur est super administrateur
+    | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rifier si l'utilisateur est super administrateur
     |--------------------------------------------------------------------------
     */
 
@@ -31,7 +32,7 @@ class PresenceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Vérifier qu'une classe appartient à l'établissement
+    | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rifier qu'une classe appartient ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  l'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissement
     |--------------------------------------------------------------------------
     */
 
@@ -45,14 +46,14 @@ class PresenceController extends Controller
             (int) $classe->id_etablissement ===
             (int) $user->id_etablissement,
             403,
-            'Cette classe n’appartient pas à votre établissement.'
+            'Cette classe nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢appartient pas ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  votre ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissement.'
         );
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Vérifier qu'un élève appartient à l'établissement
+    | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rifier qu'un ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve appartient ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  l'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissement
     |--------------------------------------------------------------------------
     */
 
@@ -66,7 +67,7 @@ class PresenceController extends Controller
             (int) $eleve->id_etablissement ===
             (int) $user->id_etablissement,
             403,
-            'Cet élève n’appartient pas à votre établissement.'
+            'Cet ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢appartient pas ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  votre ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissement.'
         );
     }
 
@@ -76,12 +77,12 @@ class PresenceController extends Controller
     | INDEX
     |--------------------------------------------------------------------------
     |
-    | Liste des présences avec filtres.
+    | Liste des prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sences avec filtres.
     |
     */
 
     public function index(Request $request)
-    {
+    {        
         $this->authorize('viewAny', Presence::class);
 
         $user = auth()->user();
@@ -95,7 +96,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Sécurité établissement
+        | SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©curitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissement
         |--------------------------------------------------------------------------
         */
 
@@ -123,7 +124,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Filtre élève
+        | Filtre ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve
         |--------------------------------------------------------------------------
         */
 
@@ -186,50 +187,71 @@ class PresenceController extends Controller
             ->withQueryString();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Élèves disponibles
-        |--------------------------------------------------------------------------
-        */
 
-        $elevesQuery = Eleve::orderBy('nom')
-            ->orderBy('postnom')
-            ->orderBy('prenom');
-
-        if (!$this->estSuperAdministrateur($user)) {
-
-            $elevesQuery->where(
-                'id_etablissement',
-                $user->id_etablissement
-            );
-        }
-
-        $eleves = $elevesQuery->get();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Classes disponibles
-        |--------------------------------------------------------------------------
-        */
-
-        $classesQuery = Classe::orderBy('libelle');
-
-        if (!$this->estSuperAdministrateur($user)) {
-
-            $classesQuery->where(
-                'id_etablissement',
-                $user->id_etablissement
-            );
-        }
-
-        $classes = $classesQuery->get();
-
-        \Log::info('PRESENCES PERFORMANCE', [
-            'presences_total' => $presences->total(),
-            'eleves_count' => $eleves->count(),
-            'classes_count' => $classes->count(),
+        \Log::warning('PRESENCES CACHE DIAGNOSTIC', [
+            'cache_default' => config('cache.default'),
+            'cache_store' => get_class(Cache::store()->getStore()),
+            'php_version' => PHP_VERSION,
+            'php_sapi' => PHP_SAPI,
+            'eleves_cache_avant' => get_debug_type(Cache::get('presences_eleves_' . ($this->estSuperAdministrateur($user) ? 'all' : $user->id_etablissement))),
+            'classes_cache_avant' => get_debug_type(Cache::get('presences_classes_' . ($this->estSuperAdministrateur($user) ? 'all' : $user->id_etablissement))),
         ]);
+        /*
+        |--------------------------------------------------------------------------
+        | ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ves disponibles
+        |--------------------------------------------------------------------------
+        */
+
+        $eleves = Cache::remember(
+            'presences_eleves_' . ($this->estSuperAdministrateur($user) ? 'all' : $user->id_etablissement),
+            now()->addMinutes(10),
+            function () use ($user) {
+                $query = Eleve::orderBy('nom')
+                    ->orderBy('postnom')
+                    ->orderBy('prenom');
+
+                if (!$this->estSuperAdministrateur($user)) {
+                    $query->where('id_etablissement', $user->id_etablissement);
+                }
+
+                return $query->get()->map(fn ($eleve) => [
+                    'id_eleve' => $eleve->id_eleve,
+                    'nom' => $eleve->nom,
+                    'postnom' => $eleve->postnom,
+                    'prenom' => $eleve->prenom,
+                ])->values()->all();
+            }
+        );
+
+        $classes = Cache::remember(
+            'presences_classes_' . ($this->estSuperAdministrateur($user) ? 'all' : $user->id_etablissement),
+            now()->addMinutes(10),
+            function () use ($user) {
+                $query = Classe::orderBy('libelle');
+
+                if (!$this->estSuperAdministrateur($user)) {
+                    $query->where('id_etablissement', $user->id_etablissement);
+                }
+
+                return $query->get()->map(fn ($classe) => [
+                    'id_classe' => $classe->id_classe,
+                    'libelle' => $classe->libelle,
+                ])->values()->all();
+            }
+        );
+
+        \Log::info('PRESENCES DEBUG AVANT VIEW', [
+            'user_id' => $user->id_utilisateur ?? null,
+            'etablissement' => $user->id_etablissement ?? null,
+            'eleves_type' => get_debug_type($eleves),
+            'eleves_count' => is_countable($eleves) ? count($eleves) : null,
+            'eleves_first_type' => is_iterable($eleves) ? get_debug_type(collect($eleves)->first()) : null,
+            'eleves_first' => is_iterable($eleves) ? collect($eleves)->first() : null,
+            'classes_type' => get_debug_type($classes),
+            'classes_count' => is_countable($classes) ? count($classes) : null,
+        ]);
+        \Log::warning('PRESENCES INDEX AVANT RETURN VIEW', ['eleves_type' => get_debug_type($eleves), 'eleves_count' => is_countable($eleves) ? count($eleves) : null, 'eleves_first_type' => is_iterable($eleves) ? get_debug_type(collect($eleves)->first()) : null, 'classes_type' => get_debug_type($classes), 'classes_count' => is_countable($classes) ? count($classes) : null]);
+
 
         return view(
             'presences.index',
@@ -247,11 +269,11 @@ class PresenceController extends Controller
     | CREATE
     |--------------------------------------------------------------------------
     |
-    | Première étape :
+    | PremiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tape :
     |
     | Classe + date
     |
-    | Le formulaire utilise GET pour charger les élèves.
+    | Le formulaire utilise GET pour charger les ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ves.
     |
     */
 
@@ -283,7 +305,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Aucun élève au départ
+        | Aucun ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve au dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©part
         |--------------------------------------------------------------------------
         */
 
@@ -292,7 +314,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Si une classe est sélectionnée
+        | Si une classe est sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lectionnÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e
         |--------------------------------------------------------------------------
         */
 
@@ -305,7 +327,7 @@ class PresenceController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Vérification établissement
+            | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rification ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissement
             |--------------------------------------------------------------------------
             */
 
@@ -317,7 +339,7 @@ class PresenceController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Récupération des élèves inscrits dans cette classe
+            | RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cupÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ration des ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ves inscrits dans cette classe
             |--------------------------------------------------------------------------
             |
             | Nous n'utilisons pas ici une relation Eloquent obligatoire.
@@ -375,7 +397,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Validation générale
+        | Validation gÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rale
         |--------------------------------------------------------------------------
         */
 
@@ -458,7 +480,7 @@ class PresenceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Élève
+                | ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve
                 |--------------------------------------------------------------------------
                 */
 
@@ -474,7 +496,7 @@ class PresenceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Vérifier que l'élève est inscrit dans la classe
+                | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rifier que l'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve est inscrit dans la classe
                 |--------------------------------------------------------------------------
                 */
 
@@ -492,13 +514,13 @@ class PresenceController extends Controller
                 abort_unless(
                     $estInscrit,
                     403,
-                    'Cet élève n’est pas inscrit dans cette classe.'
+                    'Cet ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢est pas inscrit dans cette classe.'
                 );
 
 
                 /*
                 |--------------------------------------------------------------------------
-                | Vérifier si une présence existe déjà
+                | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rifier si une prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence existe dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©jÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â 
                 |--------------------------------------------------------------------------
                 */
 
@@ -519,7 +541,7 @@ class PresenceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Si déjà enregistrée
+                | Si dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©jÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  enregistrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e
                 |--------------------------------------------------------------------------
                 */
 
@@ -549,7 +571,7 @@ class PresenceController extends Controller
                             auth()->id(),
 
                         'action' =>
-                            'Modification d’une présence',
+                            'Modification dÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢une prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence',
 
                         'table_concernee' =>
                             'presences',
@@ -586,7 +608,7 @@ class PresenceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Nouvelle présence
+                | Nouvelle prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence
                 |--------------------------------------------------------------------------
                 */
 
@@ -625,7 +647,7 @@ class PresenceController extends Controller
                         auth()->id(),
 
                     'action' =>
-                        'Ajout d’une présence',
+                        'Ajout dÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢une prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence',
 
                     'table_concernee' =>
                         'presences',
@@ -660,7 +682,7 @@ class PresenceController extends Controller
             ->route('presences.index')
             ->with(
                 'success',
-                'Les présences de la classe ont été enregistrées avec succès.'
+                'Les prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sences de la classe ont ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© enregistrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es avec succÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s.'
             );
     }
 
@@ -684,7 +706,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Vérification établissement
+        | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rification ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissement
         |--------------------------------------------------------------------------
         */
 
@@ -719,12 +741,12 @@ class PresenceController extends Controller
     |
     | Modification collective.
     |
-    | On prend une présence existante comme référence pour retrouver :
+    | On prend une prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence existante comme rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rence pour retrouver :
     |
     | - la classe
     | - la date
     |
-    | Puis toutes les présences de cette classe/date sont affichées.
+    | Puis toutes les prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sences de cette classe/date sont affichÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es.
     |
     */
 
@@ -758,7 +780,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Élèves de la classe
+        | ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ves de la classe
         |--------------------------------------------------------------------------
         */
 
@@ -788,7 +810,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Présences existantes
+        | PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sences existantes
         |--------------------------------------------------------------------------
         */
 
@@ -821,7 +843,7 @@ class PresenceController extends Controller
     | UPDATE
     |--------------------------------------------------------------------------
     |
-    | Modification collective de toutes les présences de la classe.
+    | Modification collective de toutes les prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sences de la classe.
     |
     */
 
@@ -876,7 +898,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Classe de la présence
+        | Classe de la prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence
         |--------------------------------------------------------------------------
         */
 
@@ -893,7 +915,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Mise à jour collective
+        | Mise ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  jour collective
         |--------------------------------------------------------------------------
         */
 
@@ -912,7 +934,7 @@ class PresenceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Élève
+                | ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve
                 |--------------------------------------------------------------------------
                 */
 
@@ -928,7 +950,7 @@ class PresenceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Vérifier inscription
+                | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rifier inscription
                 |--------------------------------------------------------------------------
                 */
 
@@ -946,13 +968,13 @@ class PresenceController extends Controller
                 abort_unless(
                     $estInscrit,
                     403,
-                    'Cet élève n’est pas inscrit dans cette classe.'
+                    'Cet ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ve nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢est pas inscrit dans cette classe.'
                 );
 
 
                 /*
                 |--------------------------------------------------------------------------
-                | Chercher la présence
+                | Chercher la prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence
                 |--------------------------------------------------------------------------
                 */
 
@@ -973,7 +995,7 @@ class PresenceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Créer si elle n'existe pas
+                | CrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©er si elle n'existe pas
                 |--------------------------------------------------------------------------
                 */
 
@@ -1008,7 +1030,7 @@ class PresenceController extends Controller
                             auth()->id(),
 
                         'action' =>
-                            'Ajout d’une présence',
+                            'Ajout dÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢une prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence',
 
                         'table_concernee' =>
                             'presences',
@@ -1082,7 +1104,7 @@ class PresenceController extends Controller
                         auth()->id(),
 
                     'action' =>
-                        'Modification d’une présence',
+                        'Modification dÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢une prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence',
 
                     'table_concernee' =>
                         'presences',
@@ -1120,7 +1142,7 @@ class PresenceController extends Controller
             ->route('presences.index')
             ->with(
                 'success',
-                'Les présences de la classe ont été modifiées avec succès.'
+                'Les prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sences de la classe ont ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© modifiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es avec succÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s.'
             );
     }
 
@@ -1144,7 +1166,7 @@ class PresenceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Vérification établissement
+        | VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rification ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissement
         |--------------------------------------------------------------------------
         */
 
@@ -1192,7 +1214,7 @@ class PresenceController extends Controller
                     auth()->id(),
 
                 'action' =>
-                    'Suppression d’une présence',
+                    'Suppression dÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢une prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence',
 
                 'table_concernee' =>
                     'presences',
@@ -1225,7 +1247,7 @@ class PresenceController extends Controller
                 ->route('presences.index')
                 ->with(
                     'success',
-                    'Présence supprimée avec succès.'
+                    'PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence supprimÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e avec succÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s.'
                 );
 
 
@@ -1235,7 +1257,7 @@ class PresenceController extends Controller
                 ->route('presences.index')
                 ->with(
                     'error',
-                    'Cette présence ne peut pas être supprimée.'
+                    'Cette prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sence ne peut pas ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre supprimÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e.'
                 );
         }
     }

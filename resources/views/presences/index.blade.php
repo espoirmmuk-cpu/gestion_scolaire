@@ -143,8 +143,8 @@
 
 
                         {{-- Élève --}}
-                        <div>
 
+                        <div>
                             <label
                                 for="id_eleve"
                                 class="mb-1.5 block text-sm font-medium text-gray-700"
@@ -152,30 +152,29 @@
                                 Élève
                             </label>
 
-                            <select
-                                name="id_eleve"
-                                id="id_eleve"
-                                class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            >
+                        <select
+                            name="id_eleve"
+                            id="id_eleve"
+                            class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                            <option value="">
+                                Tous les élèves
+                            </option>
 
-                                <option value="">
-                                    Tous les élèves
-                                </option>
-
-                                @foreach ($eleves as $eleve)
-
+                            @foreach ($eleves as $eleve)
+                                @if (is_object($eleve) && isset($eleve->id_eleve))
                                     <option
                                         value="{{ $eleve->id_eleve }}"
                                         @selected(request('id_eleve') == $eleve->id_eleve)
                                     >
                                         {{ trim($eleve->nom . ' ' . ($eleve->postnom ?? '') . ' ' . ($eleve->prenom ?? '')) }}
                                     </option>
-
-                                @endforeach
-
-                            </select>
+                                @endif
+                            @endforeach
+                        </select>
 
                         </div>
+
 
 
                         {{-- Classe --}}
@@ -201,11 +200,11 @@
                                 @foreach ($classes as $classe)
 
                                     <option
-                                        value="{{ $classe->id_classe }}"
-                                        @selected(request('id_classe') == $classe->id_classe)
-                                    >
-                                        {{ $classe->libelle }}
-                                    </option>
+                                    value="{{ $classe['id_classe'] }}"
+                                    @selected(request('id_classe') == $classe['id_classe'])
+                                >
+                                    {{ $classe['libelle'] }}
+                                </option>
 
                                 @endforeach
 
