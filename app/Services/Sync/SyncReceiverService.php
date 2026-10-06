@@ -43,6 +43,7 @@ class SyncReceiverService
         'classes_matieres',
         'affectations_enseignants',
         'utilisateurs',
+        'roles',
         'journaux_activites',
         'permissions',
     ];
@@ -396,9 +397,17 @@ class SyncReceiverService
                 'table' => 'etablissements',
                 'uuid_field' => 'etablissement_uuid',
             ],
+            
             'id_utilisateur' => [
                 'table' => 'utilisateurs',
                 'uuid_field' => 'utilisateur_uuid',
+            ],
+        ],
+
+        'utilisateurs' => [
+            'id_etablissement' => [
+                'table' => 'etablissements',
+                'uuid_field' => 'etablissement_uuid',
             ],
         ],
 
