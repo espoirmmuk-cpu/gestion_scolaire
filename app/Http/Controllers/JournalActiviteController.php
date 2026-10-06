@@ -14,129 +14,53 @@ class JournalActiviteController extends Controller
      */
     public function index(Request $request)
     {
-        Gate::authorize(
-            'viewAny',
-            JournalActivite::class
-        );
+        Gate::authorize('viewAny', JournalActivite::class);
 
         $user = auth()->user();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Requête de base
-        |--------------------------------------------------------------------------
-        */
 
         $query = JournalActivite::with('utilisateur')
             ->orderByDesc('date_heure');
 
         /*
         |--------------------------------------------------------------------------
-        | Sécurité établissement
+        | Isolation stricte par établissement
         |--------------------------------------------------------------------------
-        |
-        | L'administrateur global peut voir tous les journaux.
-        |
-        | Les autres utilisateurs ne voient que les journaux
-        | effectués par les utilisateurs de leur établissement.
-        |
         */
 
-        if (!(
+        $adminGlobal = (
             $user->id_etablissement === null &&
             $user->aLeRole('Administrateur')
-        )) {
+        );
 
-            $query->whereHas(
-                'utilisateur',
-                function ($q) use ($user) {
-
-                    $q->where(
-                        'id_etablissement',
-                        $user->id_etablissement
-                    );
-                }
-            );
+        if (!$adminGlobal) {
+            $query->where('id_etablissement', $user->id_etablissement);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Filtre par action
+        | Filtres
         |--------------------------------------------------------------------------
         */
 
         if ($request->filled('action')) {
-
-            $query->where(
-                'action',
-                'like',
-                '%' . $request->action . '%'
-            );
+            $query->where('action', 'like', '%' . $request->action . '%');
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Filtre par table concernée
-        |--------------------------------------------------------------------------
-        */
 
         if ($request->filled('table_concernee')) {
-
-            $query->where(
-                'table_concernee',
-                $request->table_concernee
-            );
+            $query->where('table_concernee', $request->table_concernee);
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Filtre par utilisateur
-        |--------------------------------------------------------------------------
-        */
 
         if ($request->filled('id_utilisateur')) {
-
-            $query->where(
-                'id_utilisateur',
-                $request->id_utilisateur
-            );
+            $query->where('id_utilisateur', $request->id_utilisateur);
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Date début
-        |--------------------------------------------------------------------------
-        */
 
         if ($request->filled('date_debut')) {
-
-            $query->whereDate(
-                'date_heure',
-                '>=',
-                $request->date_debut
-            );
+            $query->whereDate('date_heure', '>=', $request->date_debut);
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Date fin
-        |--------------------------------------------------------------------------
-        */
 
         if ($request->filled('date_fin')) {
-
-            $query->whereDate(
-                'date_heure',
-                '<=',
-                $request->date_fin
-            );
+            $query->whereDate('date_heure', '<=', $request->date_fin);
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Pagination
-        |--------------------------------------------------------------------------
-        */
 
         $activites = $query
             ->paginate(15)
@@ -144,18 +68,14 @@ class JournalActiviteController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Utilisateurs disponibles dans les filtres
+        | Utilisateurs du même établissement
         |--------------------------------------------------------------------------
         */
 
         $utilisateursQuery = User::query()
             ->orderBy('nom');
 
-        if (!(
-            $user->id_etablissement === null &&
-            $user->aLeRole('Administrateur')
-        )) {
-
+        if (!$adminGlobal) {
             $utilisateursQuery->where(
                 'id_etablissement',
                 $user->id_etablissement
@@ -168,28 +88,15 @@ class JournalActiviteController extends Controller
         |--------------------------------------------------------------------------
         | Tables concernées
         |--------------------------------------------------------------------------
-        |
-        | On utilise la même requête sécurisée.
-        |
         */
 
         $tables = (clone $query)
             ->reorder()
             ->whereNotNull('table_concernee')
-            ->where(
-                'table_concernee',
-                '!=',
-                ''
-            )
+            ->where('table_concernee', '!=', '')
             ->distinct()
             ->orderBy('table_concernee')
             ->pluck('table_concernee');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Affichage
-        |--------------------------------------------------------------------------
-        */
 
         return view(
             'journaux-activites.index',
@@ -204,16 +111,25 @@ class JournalActiviteController extends Controller
     /**
      * Afficher le détail d'une activité.
      */
-    public function show(
-        JournalActivite $journal
-    ) {
+    public function show(JournalActivite $journal)
+    {
+        $user = auth()->user();
+
+        $adminGlobal = (
+            $user->id_etablissement === null &&
+            $user->aLeRole('Administrateur')
+        );
+
+        if (!$adminGlobal) {
+            abort_unless(
+                $journal->id_etablissement === $user->id_etablissement,
+                403
+            );
+        }
 
         $journal->load('utilisateur');
 
-        Gate::authorize(
-            'view',
-            $journal
-        );
+        Gate::authorize('view', $journal);
 
         return view(
             'journaux-activites.show',

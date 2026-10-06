@@ -21,6 +21,7 @@ class JournalActivite extends Model
 
     protected $fillable = [
         'id_utilisateur',
+        'id_etablissement',
         'action',
         'table_concernee',
         'id_enregistrement',
@@ -48,12 +49,30 @@ class JournalActivite extends Model
     }
 
     /**
-     * Établissement de l'utilisateur ayant effectué l'action.
-     *
-     * La relation passe par la table utilisateurs.
+     * Établissement auquel appartient le journal.
      */
-    public function getIdEtablissementAttribute()
+    public function etablissement()
     {
-        return $this->utilisateur?->id_etablissement;
+        return $this->belongsTo(
+            Etablissement::class,
+            'id_etablissement',
+            'id_etablissement'
+        );
+    }
+
+    /**
+     * Renseigne automatiquement l'établissement
+     * lors de la création du journal.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function ($journal) {
+            if (
+                $journal->id_etablissement === null &&
+                auth()->check()
+            ) {
+                $journal->id_etablissement = auth()->user()->id_etablissement;
+            }
+        });
     }
 }
