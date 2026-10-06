@@ -303,6 +303,11 @@ class SyncPayloadBuilder
         ],
 
         'journaux_activites' => [
+                'id_etablissement' => [
+                'table' => 'etablissements',
+                'uuid_field' => 'etablissement_uuid',
+            ],
+            
             'id_utilisateur' => [
                 'table' => 'utilisateurs',
                 'uuid_field' => 'utilisateur_uuid',

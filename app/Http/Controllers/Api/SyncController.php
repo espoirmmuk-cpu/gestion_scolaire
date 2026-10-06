@@ -151,19 +151,39 @@ class SyncController extends Controller
 
             $results = [];
 
+            /*
+            * Une seule requête vers le Cloud.
+            * Le rapprochement UUID/code est ensuite effectué en mémoire.
+            */
+            $cloudEstablishments = $cloudConnection
+                ->table('etablissements')
+                ->get([
+                    'id_etablissement',
+                    'nom',
+                    'code',
+                    'uuid_sync',
+                ]);
+
+            $cloudByCode = $cloudEstablishments->keyBy('code');
+
+            $cloudByUuid = $cloudEstablishments
+                ->filter(fn ($etablissement) => !empty($etablissement->uuid_sync))
+                ->keyBy('uuid_sync');
+
             foreach ($validated['establishments'] as $local) {
 
-                $cloudByUuid = $cloudConnection
-                    ->table('etablissements')
-                    ->where('uuid_sync', $local['uuid_sync'])
-                    ->first();
+                $cloudUuid = $cloudByUuid->get($local['uuid_sync']);
 
-                $cloud = $cloudConnection
-                    ->table('etablissements')
-                    ->where('code', $local['code'])
-                    ->first();
+                $cloud = $cloudByCode->get($local['code']);
 
-                if ($cloudByUuid && $cloudByUuid->code !== $local['code']) {
+                /*
+                * L’UUID local existe déjà dans le Cloud
+                * mais correspond à un autre établissement.
+                */
+                if (
+                    $cloudUuid &&
+                    $cloudUuid->code !== $local['code']
+                ) {
                     return response()->json([
                         'success' => false,
                         'message' => sprintf(
@@ -171,11 +191,14 @@ class SyncController extends Controller
                             . 'l’UUID %s est déjà associé au code %s dans le Cloud.',
                             $local['code'],
                             $local['uuid_sync'],
-                            $cloudByUuid->code
+                            $cloudUuid->code
                         ),
                     ], 409);
                 }
 
+                /*
+                * L’établissement n’existe pas encore dans le Cloud.
+                */
                 if (!$cloud) {
 
                     $data = $local;
@@ -188,6 +211,20 @@ class SyncController extends Controller
                         ->table('etablissements')
                         ->insertGetId($data);
 
+                    /*
+                    * On met aussi à jour les collections locales
+                    * pour éviter une incohérence pendant la même boucle.
+                    */
+                    $created = (object) [
+                        'id_etablissement' => $cloudId,
+                        'nom' => $local['nom'],
+                        'code' => $local['code'],
+                        'uuid_sync' => $local['uuid_sync'],
+                    ];
+
+                    $cloudByCode->put($local['code'], $created);
+                    $cloudByUuid->put($local['uuid_sync'], $created);
+
                     $results[] = [
                         'code' => $local['code'],
                         'action' => 'created_cloud',
@@ -199,6 +236,9 @@ class SyncController extends Controller
                     continue;
                 }
 
+                /*
+                * Le code existe mais le nom est différent.
+                */
                 if ($cloud->nom !== $local['nom']) {
                     return response()->json([
                         'success' => false,
@@ -211,7 +251,11 @@ class SyncController extends Controller
                     ], 409);
                 }
 
+                /*
+                * Le Cloud possède l’établissement mais pas encore son UUID.
+                */
                 if (empty($cloud->uuid_sync)) {
+
                     $cloudConnection
                         ->table('etablissements')
                         ->where('id_etablissement', $cloud->id_etablissement)
@@ -220,6 +264,11 @@ class SyncController extends Controller
                         ]);
 
                     $cloud->uuid_sync = $local['uuid_sync'];
+
+                    $cloudByUuid->put(
+                        $local['uuid_sync'],
+                        $cloud
+                    );
 
                     $results[] = [
                         'code' => $local['code'],
@@ -232,6 +281,9 @@ class SyncController extends Controller
                     continue;
                 }
 
+                /*
+                * Les deux établissements existent déjà.
+                */
                 $results[] = [
                     'code' => $local['code'],
                     'action' => $local['uuid_sync'] === $cloud->uuid_sync

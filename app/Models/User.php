@@ -12,10 +12,6 @@ class User extends Authenticatable
 
     protected $table = 'utilisateurs';
 
-    protected $syncHidden = [
-        'mot_de_passe',
-    ];
-
     protected $primaryKey = 'id_utilisateur';
 
     public $incrementing = true;
